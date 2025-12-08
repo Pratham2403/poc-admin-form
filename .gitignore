@@ -1,0 +1,55 @@
+# Node.js
+node_modules
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-store
+
+# TypeScript
+*.tsbuildinfo
+*.d.ts.map
+*.js.map
+*.mjs.map
+*.cjs.map
+
+# Build artifacts
+dist
+build
+coverage
+.nyc_output
+
+# Environment variables
+.env
+.env.*
+!.env.example # Keep .env.example if it exists for reference
+
+# IDEs and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+.history
+
+# Client-specific (React)
+client/node_modules
+client/build
+client/dist
+client/.vite
+client/.parcel-cache
+client/.env* # Include client-specific .env files
+
+# Server-specific (Express)
+server/node_modules
+server/dist
+server/build
+server/.env* # Include server-specific .env files
+server/src/config/google-service-account.config.json # Sensitive credentials
+
+# Shared-specific (likely just source, but for completeness)
+shared/node_modules
+shared/dist
+shared/build
+shared/.env*
