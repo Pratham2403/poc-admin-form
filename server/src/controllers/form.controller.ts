@@ -17,17 +17,23 @@ export const createForm = async (req: AuthRequest, res: Response) => {
 
 export const getForms = async (req: AuthRequest, res: Response) => {
   try {
-    const { role } = req.user;
-    let query = {};
+    const userId = req.user.userId;
 
-    if (role === UserRole.ADMIN) {
-      query = {
-        createdBy: req.user.userId,
-        status: { $ne: FormStatus.DELETED },
-      };
-    } else {
-      query = { status: FormStatus.PUBLISHED };
-    }
+    // Form creators can see all their forms (except deleted)
+    // Everyone else (including other admins) can only see published forms
+    const query = {
+      $or: [
+        // User's own forms (except deleted)
+        {
+          createdBy: userId,
+          status: { $ne: FormStatus.DELETED }
+        },
+        // Published forms from others
+        {
+          status: FormStatus.PUBLISHED
+        }
+      ]
+    };
 
     const forms = await Form.find(query).sort({ createdAt: -1 });
     res.json(forms);
@@ -36,15 +42,43 @@ export const getForms = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getFormById = async (req: Request, res: Response) => {
+export const getFormById = async (req: AuthRequest, res: Response) => {
   try {
+    const { id } = req.params;
+    const userId = req.user?.userId;
+    const userRole = req.user?.role;
+
+    // First check if form exists and is not deleted
     const form = await Form.findOne({
-      _id: req.params.id,
+      _id: id,
       status: { $ne: FormStatus.DELETED },
     });
+
     if (!form) {
       return res.status(404).json({ message: "Form not found" });
     }
+
+    // Now check access permissions
+    // Regular users can only access published forms
+    // Admins can access their own forms unless they are in draft, archived, or unpublished status
+
+    if (form.createdBy.toString() !== userId) {
+      // Admin accessing their own form
+      if (form.status === FormStatus.DRAFT || form.status === FormStatus.ARCHIVED || form.status === FormStatus.UNPUBLISHED) {
+        return res.status(403).json({ message: "Not authorized to view this form" });
+      }
+    }
+    // if (userRole === UserRole.ADMIN) {
+    //   if (form.createdBy.toString() !== userId) {
+    //     return res.status(403).json({ message: "Not authorized to view this form" });
+    //   }
+    // } else {
+    //   // Regular users can only see published forms
+    //   if (form.status !== FormStatus.PUBLISHED) {
+    //     return res.status(404).json({ message: "Form not found" });
+    //   }
+    // }
+
     res.json(form);
   } catch (error) {
     res.status(500).json({ message: "Error fetching form", error });

@@ -18,11 +18,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const storedUser = localStorage.getItem(userStorageKey);
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
-        }
-        setLoading(false);
+        // SECURITY FIX: Fetch user from server instead of localStorage
+        // This ensures the UI reflects the actual server-side session
+        const initAuth = async () => {
+            try {
+                // Try to refresh/validate the session from the server
+                const userData = await authService.validateSession();
+                setUser(userData);
+                localStorage.setItem(userStorageKey, JSON.stringify(userData));
+            } catch (error) {
+                // Session invalid or expired, clear local storage
+                localStorage.removeItem(userStorageKey);
+                setUser(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        initAuth();
     }, []);
 
     const login = async (credentials: any) => {

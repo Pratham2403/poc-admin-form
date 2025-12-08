@@ -15,9 +15,16 @@ export const submitResponse = async (req: AuthRequest, res: Response) => {
 
         const userId = req.user ? req.user.userId : undefined;
 
-        const form = await Form.findOne({ _id: formId , status: FormStatus.PUBLISHED});
+        const form = await Form.findOne({ _id: formId, status: FormStatus.PUBLISHED });
         if (!form) {
             return res.status(404).json({ message: 'Form not found' });
+        }
+
+        // CRITICAL FIX: Check for duplicate submission BEFORE Google Sheets sync
+        // This prevents orphaned spreadsheet entries from parallel requests
+        const existingResponse = await FormResponse.findOne({ formId, userId });
+        if (existingResponse) {
+            return res.status(409).json({ message: 'You have already submitted this form.' });
         }
 
         // Validate Short Answer Lengths
@@ -62,12 +69,6 @@ export const submitResponse = async (req: AuthRequest, res: Response) => {
                 console.error("Failed to sync to sheets", err);
                 // We don't fail the request if sheet sync fails, but we log it.
             }
-        }
-
-        const existingResponse = await FormResponse.findOne({ formId, userId });
-        if (existingResponse) {
-            // If somehow we missed the check or parallel request
-            return res.status(409).json({ message: 'You have already submitted this form.' });
         }
 
         const response = await FormResponse.create({

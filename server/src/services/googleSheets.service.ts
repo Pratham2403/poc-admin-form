@@ -1,35 +1,21 @@
 import { google } from "googleapis";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
+const SERVICE_ACCOUNT_FILE = path.join(
+  __dirname,
+  "../config/google-service-account.config.json"
+);
 
-// Load Google service account credentials from environment variable
-const getGoogleAuth = () => {
-  const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+const auth = new google.auth.GoogleAuth({
+  keyFile: SERVICE_ACCOUNT_FILE,
+  scopes: SCOPES,
+});
 
-  if (!serviceAccountJson) {
-    throw new Error(
-      "GOOGLE_SERVICE_ACCOUNT_JSON environment variable is not set. " +
-        "Please provide the Google service account credentials in .env"
-    );
-  }
-
-  let credentials;
-  try {
-    credentials = JSON.parse(serviceAccountJson);
-  } catch (error) {
-    throw new Error(
-      "GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON. " +
-        "Please ensure the environment variable contains valid credentials."
-    );
-  }
-
-  return new google.auth.GoogleAuth({
-    credentials,
-    scopes: SCOPES,
-  });
-};
-
-const auth = getGoogleAuth();
 const sheets = google.sheets({ version: "v4", auth });
 
 export const getSheetIdFromUrl = (url: string): string | null => {

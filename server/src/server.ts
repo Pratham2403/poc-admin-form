@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { connectDB } from './database/connection.js';
+import { attachCSRFToken, verifyCSRFToken } from './utils/csrf.utils.js';
 
 dotenv.config();
 
@@ -17,6 +18,10 @@ app.use(cors({
     origin: process.env.CLIENT_URL || 'http://localhost:3000',
     credentials: true
 }));
+
+// CSRF Protection: Attach token to all requests, verify on state-changing methods
+app.use(attachCSRFToken);
+app.use(verifyCSRFToken);
 
 // Connect to Database
 connectDB();
