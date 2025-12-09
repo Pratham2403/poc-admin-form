@@ -1,11 +1,9 @@
+import 'dotenv/config';
 import express from 'express';
-import dotenv from 'dotenv';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { connectDB } from './database/connection.js';
 import { attachCSRFToken, verifyCSRFToken } from './utils/csrf.utils.js';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;

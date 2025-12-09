@@ -1,18 +1,29 @@
 import { google } from "googleapis";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
-const SERVICE_ACCOUNT_FILE = path.join(
-  __dirname,
-  "../config/google-service-account.config.json"
-);
+const SERVICE_ACCOUNT_FILE = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+
+if (!SERVICE_ACCOUNT_FILE) {
+  throw new Error(
+    "Missing required environment variable: GOOGLE_SERVICE_ACCOUNT_JSON"
+  );
+}
+
+let credentials;
+try {
+  credentials = JSON.parse(SERVICE_ACCOUNT_FILE);
+} catch (error) {
+  console.error(
+    "Failed to parse GOOGLE_SERVICE_ACCOUNT_JSON from environment",
+    error
+  );
+  throw new Error(
+    "Invalid GOOGLE_SERVICE_ACCOUNT_JSON environment variable: Invalid JSON"
+  );
+}
 
 const auth = new google.auth.GoogleAuth({
-  keyFile: SERVICE_ACCOUNT_FILE,
+  credentials,
   scopes: SCOPES,
 });
 
