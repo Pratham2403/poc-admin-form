@@ -3,7 +3,7 @@ import FormResponse from '../models/FormResponse.model.js';
 import Form from '../models/Form.model.js';
 import User from '../models/User.model.js'; // Added User import
 import { AuthRequest } from '../middlewares/auth.middleware.js';
-import { appendToSheet, updateSheetRow } from '../services/googleSheets.service.js';
+import { syncResponseToSheet } from '../services/googleSheets.service.js';
 import { FormStatus, QuestionType } from '@poc-admin-form/shared';
 
 
@@ -52,16 +52,13 @@ export const submitResponse = async (req: AuthRequest, res: Response) => {
                     }
                 }
 
-                // Map answers strictly to question order
-                const questionData = form.questions.map(q => {
-                    const answer = answers[q.id];
-                    if (Array.isArray(answer)) return answer.join(', ');
-                    return answer !== undefined && answer !== null ? String(answer) : '';
-                });
-
-                const fullRow = [userDetails.id, userDetails.name, userDetails.email, ...questionData];
-
-                const rowNum = await appendToSheet(form.googleSheetUrl, fullRow);
+                const rowNum = await syncResponseToSheet(
+                    form.googleSheetUrl,
+                    undefined,
+                    userDetails,
+                    answers,
+                    form.questions
+                );
                 if (rowNum) {
                     googleSheetRowNumber = rowNum;
                 }
@@ -134,15 +131,13 @@ export const updateResponse = async (req: AuthRequest, res: Response) => {
                     }
                 }
 
-                const questionData = form.questions.map(q => {
-                    const answer = answers[q.id];
-                    if (Array.isArray(answer)) return answer.join(', ');
-                    return answer !== undefined && answer !== null ? String(answer) : '';
-                });
-
-                const fullRow = [userDetails.id, userDetails.name, userDetails.email, ...questionData];
-
-                await updateSheetRow(form.googleSheetUrl, response.googleSheetRowNumber, fullRow);
+                await syncResponseToSheet(
+                    form.googleSheetUrl,
+                    String(response.googleSheetRowNumber),
+                    userDetails,
+                    answers,
+                    form.questions
+                );
             } catch (err) {
                 console.error("Failed to sync update to sheets", err);
             }

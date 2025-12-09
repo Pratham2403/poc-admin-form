@@ -61,10 +61,13 @@ export const AdminDashboard = () => {
         }
     };
 
-    const copyFormLink = (formId: string) => {
-        const link = `${window.location.origin}/forms/${formId}`;
-        navigator.clipboard.writeText(link);
-        addToast('Form link copied to clipboard!', 'success');
+    const copyFormLink = (formURL: string | undefined) => {
+        if (!formURL) {
+            addToast('No link available to copy', 'error');
+            return;
+        }
+        navigator.clipboard.writeText(formURL);
+        addToast('Link copied to clipboard!', 'success');
     };
 
     if (loading) return <PageLoader />;
@@ -134,8 +137,8 @@ export const AdminDashboard = () => {
                                     <CardTitle className="text-lg line-clamp-1">{form.title}</CardTitle>
                                     <span
                                         className={`px-2 py-1 text-xs font-medium rounded-full ${form.status === FormStatus.PUBLISHED
-                                                ? 'bg-green-500/10 text-green-500'
-                                                : 'bg-yellow-500/10 text-yellow-500'
+                                            ? 'bg-green-500/10 text-green-500'
+                                            : 'bg-yellow-500/10 text-yellow-500'
                                             }`}
                                     >
                                         {form.status}
@@ -176,7 +179,7 @@ export const AdminDashboard = () => {
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => copyFormLink(form._id!)}
+                                        onClick={() => copyFormLink(form.googleSheetUrl)}
                                     >
                                         Copy Link
                                     </Button>

@@ -3,12 +3,14 @@ import { createForm, getForms, getFormById, updateForm, deleteForm } from '../co
 import { authenticate, authorize } from '../middlewares/auth.middleware.js';
 import { UserRole } from '@poc-admin-form/shared';
 
+import { validateSheetAccess } from '../middlewares/sheetValidation.middleware.js';
+
 const router = express.Router();
 
-router.post('/', authenticate, authorize([UserRole.ADMIN]), createForm);
+router.post('/', authenticate, authorize([UserRole.ADMIN]), validateSheetAccess, createForm);
 router.get('/', authenticate, getForms);
 router.get('/:id', authenticate, getFormById);
-router.put('/:id', authenticate, authorize([UserRole.ADMIN]), updateForm);
+router.put('/:id', authenticate, authorize([UserRole.ADMIN]), validateSheetAccess, updateForm);
 router.delete('/:id', authenticate, authorize([UserRole.ADMIN]), deleteForm);
 
 export default router;

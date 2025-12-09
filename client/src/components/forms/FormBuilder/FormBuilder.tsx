@@ -19,6 +19,7 @@ import {
 } from "../../ui/Card";
 import { Spinner } from "../../ui/Spinner";
 
+
 interface FormBuilderProps {
   onSave: (form: Partial<IForm>) => Promise<void>;
   initialData?: Partial<IForm>;
@@ -43,6 +44,8 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
   );
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+
 
   // Update state if initialData changes (e.g. when loading an existing form for editing)
   useEffect(() => {
@@ -160,6 +163,13 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
       newErrors.googleSheetUrl = "Invalid Google Sheets URL";
     }
 
+    if (
+      googleSheetUrl &&
+      !googleSheetUrl.includes("docs.google.com/spreadsheets")
+    ) {
+      newErrors.googleSheetUrl = "Invalid Google Sheets URL";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -267,21 +277,27 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
 
           <div className="space-y-2">
             <Label htmlFor="googleSheetUrl">Google Sheet URL</Label>
-            <Input
-              id="googleSheetUrl"
-              value={googleSheetUrl}
-              onChange={(e) => setGoogleSheetUrl(e.target.value)}
-              placeholder="https://docs.google.com/spreadsheets/d/..."
-              className={errors.googleSheetUrl ? "border-destructive" : ""}
-            />
+            <div className="flex gap-2">
+              <Input
+                id="googleSheetUrl"
+                value={googleSheetUrl}
+                onChange={(e) => setGoogleSheetUrl(e.target.value)}
+                placeholder="https://docs.google.com/spreadsheets/d/..."
+                className={errors.googleSheetUrl ? "border-destructive" : ""}
+              />
+            </div>
+
             {errors.googleSheetUrl && (
               <p className="text-sm text-destructive">
                 {errors.googleSheetUrl}
               </p>
             )}
+
             <p className="text-xs text-muted-foreground">
-              Responses will be synced to this Google Sheet. Make sure to share
-              the sheet with your service account email.
+              Responses will be synced to this Google Sheet.
+              <span className="font-medium text-foreground block mt-1">
+                Note: The sheet must allow edit access to the service account. The system will automatically ensure columns for 'ID', 'NAME', 'EMAIL' and all Questions exist.
+              </span>
             </p>
           </div>
 
