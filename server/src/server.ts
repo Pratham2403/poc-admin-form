@@ -6,15 +6,14 @@ import { connectDB } from './database/connection.js';
 import { attachCSRFToken, verifyCSRFToken } from './utils/csrf.utils.js';
 
 const app = express();
-const PORT = process.env.PORT;
-const CLIENT_URL = process.env.CLIENT_URL;
+const PORT = process.env.PORT || 5000;
 
 // Middleware
 // Limit set to 2mb to accommodate larger form submissions while mitigating DoS risks
 app.use(express.json({ limit: '2mb' }));
 app.use(cookieParser());
 app.use(cors({
-    origin: CLIENT_URL,
+    origin: process.env.CLIENT_URL || 'https://poc-admin-form-1.onrender.com/',
     credentials: true
 }));
 
