@@ -7,6 +7,7 @@ import { type IForm } from '@poc-admin-form/shared';
 import { useToast } from '../../components/ui/Toast';
 import { PageLoader } from '../../components/ui/Spinner';
 import { Card, CardContent } from '../../components/ui/Card';
+import { usePortalPath } from '../../hooks/usePortalPath';
 
 interface ResponseData {
     _id: string;
@@ -22,6 +23,7 @@ export const EditResponse = () => {
     const [response, setResponse] = useState<ResponseData | null>(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const { getPath } = usePortalPath();
 
     useEffect(() => {
         if (id) {
@@ -36,7 +38,7 @@ export const EditResponse = () => {
 
             if (!foundResponse) {
                 addToast('Response not found', 'error');
-                navigate('/my-responses');
+                navigate(getPath('/my-responses'));
                 return;
             }
 
@@ -51,14 +53,14 @@ export const EditResponse = () => {
 
             if (!formData.allowEditResponse) {
                 addToast('Editing is not allowed for this form', 'warning');
-                navigate('/my-responses');
+                navigate(getPath('/my-responses'));
                 return;
             }
 
             setForm(formData);
         } catch (error) {
             addToast('Failed to load response data', 'error');
-            navigate('/my-responses');
+            navigate(getPath('/my-responses'));
         } finally {
             setLoading(false);
         }
@@ -71,7 +73,7 @@ export const EditResponse = () => {
         try {
             await updateResponse(id, answers);
             addToast('Response updated successfully!', 'success');
-            navigate('/my-responses');
+            navigate(getPath('/my-responses'));
         } catch (error: any) {
             addToast(error.response?.data?.message || 'Failed to update response', 'error');
         } finally {

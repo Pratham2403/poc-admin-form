@@ -7,6 +7,7 @@ import { useToast } from '../../components/ui/Toast';
 import { Button } from '../../components/ui/Button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../../components/ui/Card';
 import { PageLoader } from '../../components/ui/Spinner';
+import { usePortalPath } from '../../hooks/usePortalPath';
 
 export const FormsList = () => {
     const [forms, setForms] = useState<IForm[]>([]);
@@ -14,6 +15,7 @@ export const FormsList = () => {
     const [loading, setLoading] = useState(true);
     const { addToast } = useToast();
     const navigate = useNavigate();
+    const { getPath } = usePortalPath();
 
     useEffect(() => {
         loadForms();
@@ -83,7 +85,7 @@ export const FormsList = () => {
                                             <Button
                                                 className="w-full"
                                                 variant="outline"
-                                                onClick={() => navigate(`/my-responses/${existingResponse._id}/edit`)}
+                                                onClick={() => navigate(getPath(`/my-responses/${existingResponse._id}/edit`))}
                                             >
                                                 Edit Response
                                             </Button>
@@ -93,7 +95,7 @@ export const FormsList = () => {
                                             </Button>
                                         )
                                     ) : (
-                                        <Link to={`/forms/${form._id}`} className="w-full">
+                                        <Link to={getPath(`/forms/${form._id}`)} className="w-full">
                                             <Button className="w-full">Fill Out Form</Button>
                                         </Link>
                                     )}

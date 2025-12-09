@@ -16,43 +16,49 @@ export const register = async (req: Request, res: Response) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        const user = await User.create({
+        await User.create({
             email,
             password: hashedPassword,
             name,
             role: UserRole.USER
         });
 
-        if (user) {
-            // Generate tokens and set cookies just like login
-            const accessToken = generateAccessToken(user._id.toString(), user.role);
-            const refreshToken = generateRefreshToken(user._id.toString());
+        // if (user) {
+        //     // Generate tokens and set cookies just like login
+        //     const accessToken = generateAccessToken(user._id.toString(), user.role);
+        //     const refreshToken = generateRefreshToken(user._id.toString());
 
-            res.cookie('access_token', accessToken, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict',
-                maxAge: 15 * 60 * 1000 // 15 minutes
-            });
+        //     res.cookie('access_token', accessToken, {
+        //         httpOnly: true,
+        //         secure: process.env.NODE_ENV === 'production',
+        //         sameSite: 'strict',
+        //         maxAge: 15 * 60 * 1000 // 15 minutes
+        //     });
 
-            res.cookie('refresh_token', refreshToken, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict',
-                maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-            });
+        //     res.cookie('refresh_token', refreshToken, {
+        //         httpOnly: true,
+        //         secure: process.env.NODE_ENV === 'production',
+        //         sameSite: 'strict',
+        //         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        //     });
 
-            res.status(201).json({
-                _id: user._id,
-                email: user.email,
-                name: user.name,
-                role: user.role
-            });
-        } else {
-            res.status(400).json({ message: 'Invalid user data' });
-        }
+        //     res.status(201).json({
+        //         _id: user._id,
+        //         email: user.email,
+        //         name: user.name,
+        //         role: user.role
+        //     });
+        // } else {
+        //     res.status(400).json({ message: 'Invalid user data' });
+        // }
+
+
+        return res.status(201).json({
+            message: `User ${name} created successfully`,
+            success: true
+        });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error });
+        res.status(500).json({ message: 'Registration failed', error });
     }
 };
 

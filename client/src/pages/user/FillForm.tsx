@@ -8,6 +8,7 @@ import { useToast } from '../../components/ui/Toast';
 import { PageLoader } from '../../components/ui/Spinner';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { usePortalPath } from '../../hooks/usePortalPath';
 
 export const FillForm = () => {
     const { id } = useParams<{ id: string }>();
@@ -17,6 +18,7 @@ export const FillForm = () => {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [hasSubmitted, setHasSubmitted] = useState(false);
+    const { getPath } = usePortalPath();
 
     useEffect(() => {
         if (id) {
@@ -40,7 +42,7 @@ export const FillForm = () => {
             if (existingResponse) {
                 if (formData.allowEditResponse) {
                     addToast('You have already submitted this form. Redirecting to edit...', 'info');
-                    navigate(`/my-responses/${existingResponse._id}/edit`);
+                    navigate(getPath(`/my-responses/${existingResponse._id}/edit`));
                     return;
                 } else {
                     setHasSubmitted(true);
@@ -51,7 +53,7 @@ export const FillForm = () => {
             setForm(formData);
         } catch (error) {
             addToast('Form not found or unavailable', 'error');
-            navigate('/forms');
+            navigate(getPath('/forms'));
         } finally {
             setLoading(false);
         }
@@ -64,7 +66,7 @@ export const FillForm = () => {
         try {
             await submitResponse({ formId: id, answers });
             addToast('Response submitted successfully!', 'success');
-            navigate('/my-responses');
+            navigate(getPath('/my-responses'));
         } catch (error: any) {
             addToast(error.response?.data?.message || 'Failed to submit response', 'error');
         } finally {
@@ -81,7 +83,7 @@ export const FillForm = () => {
                     <div className="text-4xl mb-4">✅</div>
                     <h2 className="text-xl font-semibold mb-2">Already Submitted</h2>
                     <p className="text-muted-foreground">You have already submitted a response for this form.</p>
-                    <Button className="mt-4" onClick={() => navigate('/my-responses')}>
+                    <Button className="mt-4" onClick={() => navigate(getPath('/my-responses'))}>
                         View My Responses
                     </Button>
                 </CardContent>

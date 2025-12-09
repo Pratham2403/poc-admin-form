@@ -5,6 +5,7 @@ import { useToast } from '../../components/ui/Toast';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { PageLoader } from '../../components/ui/Spinner';
+import { usePortalPath } from '../../hooks/usePortalPath';
 
 interface ResponseWithForm {
     _id: string;
@@ -22,6 +23,7 @@ export const MyResponses = () => {
     const [responses, setResponses] = useState<ResponseWithForm[]>([]);
     const [loading, setLoading] = useState(true);
     const { addToast } = useToast();
+    const { getPath } = usePortalPath();
 
     useEffect(() => {
         loadResponses();
@@ -55,7 +57,7 @@ export const MyResponses = () => {
                         <p className="text-muted-foreground mb-6 max-w-md">
                             You haven't submitted any form responses yet. Browse available forms to get started.
                         </p>
-                        <Link to="/forms">
+                        <Link to={getPath('/forms')}>
                             <Button>Browse Forms</Button>
                         </Link>
                     </CardContent>
@@ -88,11 +90,11 @@ export const MyResponses = () => {
                                 </div>
                             </CardContent>
                             <CardFooter className="border-t pt-4 gap-2">
-                                <Link to={`/forms/${response.formId?._id}`}>
+                                <Link to={getPath(`/forms/${response.formId?._id}`)}>
                                     <Button variant="outline" size="sm">View Form</Button>
                                 </Link>
                                 {response.formId?.allowEditResponse && (
-                                    <Link to={`/my-responses/${response._id}/edit`}>
+                                    <Link to={getPath(`/my-responses/${response._id}/edit`)}>
                                         <Button size="sm">Edit Response</Button>
                                     </Link>
                                 )}

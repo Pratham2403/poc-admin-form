@@ -4,9 +4,8 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useToast } from '../../ui/Toast';
 import { Button } from '../../ui/Button';
 import { ModeToggle } from '../../ui/mode-toggle';
-import { UserRole } from '@poc-admin-form/shared';
 
-export const MainLayout = () => {
+export const UserLayout = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
@@ -44,19 +43,16 @@ export const MainLayout = () => {
                 <div className="container mx-auto flex h-16 items-center justify-between px-4">
                     {/* Logo */}
                     <Link to="/" className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/60 rounded-lg flex items-center justify-center text-primary-foreground font-bold text-lg">
+                        <div className="w-9 h-8 bg-gradient-to-br from-primary to-primary/60 rounded-lg flex items-center justify-center text-primary-foreground font-bold text-lg">
                             AE
                         </div>
                         <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                            Apparent Energy
+                            Apparent Energy Forms
                         </span>
                     </Link>
 
                     {/* Navigation - Desktop */}
                     <nav className="hidden md:flex items-center gap-1">
-                        {user?.role === UserRole.ADMIN && (
-                            <NavLink to="/admin/dashboard">Dashboard</NavLink>
-                        )}
                         <NavLink to="/forms">Forms</NavLink>
                         <NavLink to="/my-responses">My Responses</NavLink>
                     </nav>
@@ -111,15 +107,6 @@ export const MainLayout = () => {
                         </div>
 
                         <nav className="flex flex-col gap-2">
-                            {user?.role === UserRole.ADMIN && (
-                                <Link
-                                    to="/admin/dashboard"
-                                    onClick={() => setIsMobileMenuOpen(false)}
-                                    className={`p-4 rounded-lg border hover:bg-accent transition-colors ${isActive('/admin/dashboard') ? 'border-primary bg-primary/5' : ''}`}
-                                >
-                                    Dashboard
-                                </Link>
-                            )}
                             <Link
                                 to="/forms"
                                 onClick={() => setIsMobileMenuOpen(false)}
@@ -153,7 +140,7 @@ export const MainLayout = () => {
             {/* Footer */}
             <footer className="border-t bg-muted/30 mt-auto">
                 <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
-                    <p>&copy; {new Date().getFullYear()} Apparent Energy Forms. All rights reserved.</p>
+                    <p>&copy; {new Date().getFullYear()} Apparent Energy. All rights reserved.</p>
                 </div>
             </footer>
         </div>
