@@ -75,15 +75,25 @@ export const validateAndInitializeSheet = async (
 
     return { title: sheetTitle, sheetId: spreadsheetId };
   } catch (error: any) {
-    console.error("Error validating sheet:", error);
-    if (error.code === 403 || error.code === 401) {
+    // Enterprise Error Handling: Differentiate between Client-Side (expected) and Server-Side (unexpected) errors
+    // to avoid polluting logs with stack traces for user input errors.
+
+    // Handle Gaxios/Google API errors specifically
+    if (error.code === 403 || error.code === 401 || (error.response && [401, 403].includes(error.response.status))) {
+      // Log concise warning instead of full stack trace
+      console.warn(`[Sheet Validation] Permission denied for sheet ID/URL: ${spreadsheetIdOrUrl}`);
       throw new Error(
         "Service account does not have access to this sheet. Please share it with the service account email."
       );
     }
-    if (error.code === 404) {
+
+    if (error.code === 404 || (error.response && error.response.status === 404)) {
+      console.warn(`[Sheet Validation] Sheet not found: ${spreadsheetIdOrUrl}`);
       throw new Error("Spreadsheet not found. Please check the URL.");
     }
+
+    // For other unexpected errors, we do want to log the details for debugging, but maybe less verbose if possible
+    console.error("[Sheet Validation] Unexpected error:", error.message);
     throw error;
   }
 };
@@ -171,7 +181,15 @@ export const syncResponseToSheet = async (
     const index = questionTitleToHeaderIndex[cleanTitle];
     if (index !== undefined) {
       const ans = answers[q.id];
-      const val = Array.isArray(ans) ? ans.join(", ") : (ans !== undefined && ans !== null ? String(ans) : "");
+      // Format value for sheet
+      let val = "";
+      if (Array.isArray(ans)) {
+        // Prepend apostrophe to force Google Sheets to treat comma-separated lists as text,
+        // preventing unwanted date/number conversion (e.g. "1, 3, 4" -> Date).
+        val = `'${ans.join(", ")}`;
+      } else if (ans !== undefined && ans !== null) {
+        val = String(ans);
+      }
       rowData[index] = val;
     }
   });

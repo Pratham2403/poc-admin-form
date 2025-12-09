@@ -17,7 +17,8 @@ export const validateSheetAccess = async (req: Request, res: Response, next: Nex
 
         next();
     } catch (error: any) {
-        console.error('Sheet validation middleware error:', error);
+        // Log only the message to keep console clean, as the service has already handled detailed logging/warnings if needed
+        console.error('Sheet validation middleware error:', error.message);
 
         // Return 400 for validation errors so the frontend can display them to the user
         res.status(400).json({

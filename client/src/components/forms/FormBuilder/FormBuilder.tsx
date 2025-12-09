@@ -18,6 +18,7 @@ import {
   CardDescription,
 } from "../../ui/Card";
 import { Spinner } from "../../ui/Spinner";
+import { QuestionItem } from "./QuestionItem";
 
 
 interface FormBuilderProps {
@@ -333,132 +334,19 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
         )}
 
         {questions.map((q, index) => (
-          <Card key={q.id} className="relative">
-            <div className="absolute top-2 right-2 flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => removeQuestion(q.id)}
-                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-              >
-                Remove
-              </Button>
-            </div>
-            <CardContent className="pt-6 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label required>Question {index + 1}</Label>
-                  <Input
-                    value={q.title}
-                    onChange={(e) =>
-                      updateQuestion(q.id, { title: e.target.value })
-                    }
-                    placeholder="Enter question"
-                    className={
-                      errors[`question_${index}`] ? "border-destructive" : ""
-                    }
-                  />
-                  {errors[`question_${index}`] && (
-                    <p className="text-sm text-destructive">
-                      {errors[`question_${index}`]}
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>Question Type</Label>
-                  <div className="relative">
-                    <select
-                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none"
-                      value={q.type}
-                      onChange={(e) =>
-                        updateQuestion(q.id, {
-                          type: e.target.value as QuestionType,
-                          options: [],
-                        })
-                      }
-                    >
-                      {questionTypes.map((type) => (
-                        <option key={type.value} value={type.value}>
-                          {type.label}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="absolute right-3 top-2.5 pointer-events-none text-muted-foreground">
-                      ▼
-                    </div>
-                    <div className="mt-2 flex items-start gap-2 text-xs text-muted-foreground bg-primary/5 p-2 rounded">
-                      <div className="min-w-[16px] h-4 flex items-center justify-center rounded-full border border-primary/40 text-[10px] font-bold text-primary">
-                        i
-                      </div>
-                      {
-                        questionTypes.find((t) => t.value === q.type)
-                          ?.description
-                      }
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Description (optional)</Label>
-                <Input
-                  value={q.description || ""}
-                  onChange={(e) =>
-                    updateQuestion(q.id, { description: e.target.value })
-                  }
-                  placeholder="Add a description or helper text"
-                />
-              </div>
-
-              {hasOptions(q.type) && (
-                <div className="space-y-2 pl-4 border-l-2 border-primary/20">
-                  <Label className="pr-4">Options</Label>
-                  {errors[`question_${index}_options`] && (
-                    <p className="text-sm text-destructive">
-                      {errors[`question_${index}_options`]}
-                    </p>
-                  )}
-                  {q.options?.map((opt, optIndex) => (
-                    <div key={optIndex} className="flex gap-2">
-                      <Input
-                        value={opt}
-                        onChange={(e) =>
-                          updateOption(q.id, optIndex, e.target.value)
-                        }
-                        placeholder={`Option ${optIndex + 1}`}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeOption(q.id, optIndex)}
-                        className="text-destructive"
-                      >
-                        ✕
-                      </Button>
-                    </div>
-                  ))}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => addOption(q.id)}
-                  >
-                    + Add Option
-                  </Button>
-                </div>
-              )}
-
-              <div className="flex items-center gap-2 pt-2 border-t">
-                <Switch
-                  id={`required_${q.id}`}
-                  checked={q.required || false}
-                  onCheckedChange={(checked) =>
-                    updateQuestion(q.id, { required: checked })
-                  }
-                />
-                <Label htmlFor={`required_${q.id}`}>Required</Label>
-              </div>
-            </CardContent>
-          </Card>
+          <QuestionItem
+            key={q.id}
+            q={q}
+            index={index}
+            updateQuestion={updateQuestion}
+            removeQuestion={removeQuestion}
+            errors={errors}
+            questionTypes={questionTypes}
+            addOption={addOption}
+            updateOption={updateOption}
+            removeOption={removeOption}
+            hasOptions={hasOptions}
+          />
         ))}
 
         {questions.length === 0 && (
