@@ -6,7 +6,7 @@ import { connectDB } from './database/connection.js';
 import { attachCSRFToken, verifyCSRFToken } from './utils/csrf.utils.js';
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT;
 const CLIENT_URL = process.env.CLIENT_URL;
 
 // Middleware
