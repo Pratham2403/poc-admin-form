@@ -15,7 +15,7 @@ export const CreateUser = () => {
     const password = 'password123';
 
     const [loading, setLoading] = useState(false);
-    const { register } = useAuth(); // Assuming authService.register handles generic registration for now
+    // const { register } = useAuth(); // Assuming authService.register handles generic registration for now
     const navigate = useNavigate();
     const { addToast } = useToast();
 
