@@ -133,7 +133,7 @@ export const UserLayout = () => {
             </header>
 
             {/* Main Content */}
-            <main className="container mx-auto px-4 py-6">
+            <main className="container h-[calc(100vh-8.5rem)] mx-auto px-4 py-6">
                 <Outlet />
             </main>
 
