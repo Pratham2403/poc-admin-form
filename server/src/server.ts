@@ -8,12 +8,33 @@ import { attachCSRFToken, verifyCSRFToken } from './utils/csrf.utils.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust proxy (required for Render/Heroku to detect HTTPS)
+app.set('trust proxy', 1);
+
 // Middleware
 // Limit set to 2mb to accommodate larger form submissions while mitigating DoS risks
 app.use(express.json({ limit: '2mb' }));
 app.use(cookieParser());
 app.use(cors({
-    origin: process.env.CLIENT_URL || 'https://poc-admin-form-1.onrender.com/',
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+
+        const allowedOrigins = process.env.CLIENT_URL
+            ? process.env.CLIENT_URL.split(',').map(url => url.trim())
+            : []; // No default fallbacks in production for security. Set CLIENT_URL!
+
+        if (process.env.NODE_ENV !== 'production') {
+            // Allow localhost in dev
+            allowedOrigins.push('http://localhost:3000');
+        }
+
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 }));
 
