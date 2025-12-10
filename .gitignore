@@ -46,7 +46,7 @@ server/node_modules
 server/dist
 server/build
 server/.env* # Include server-specific .env files
-server/src/config/google-service-account.config.json # Sensitive credentials
+server/src/config/*
 
 # Shared-specific (likely just source, but for completeness)
 shared/node_modules
