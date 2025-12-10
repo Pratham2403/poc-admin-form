@@ -103,10 +103,14 @@ export const login = async (req: Request, res: Response) => {
 export const logout = (req: Request, res: Response) => {
     res.cookie('access_token', '', {
         httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         expires: new Date(0)
     });
     res.cookie('refresh_token', '', {
         httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         expires: new Date(0)
     });
     res.status(200).json({ message: 'Logged out successfully' });

@@ -37,7 +37,7 @@ export const UserLayout = () => {
     );
 
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-background flex flex-col">
             {/* Header */}
             <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -133,7 +133,7 @@ export const UserLayout = () => {
             </header>
 
             {/* Main Content */}
-            <main className="container h-[calc(100vh-8.5rem)] mx-auto px-4 py-6">
+            <main className="container mx-auto px-4 py-6 flex-1">
                 <Outlet />
             </main>
 
