@@ -5,12 +5,15 @@ import { useToast } from '../../components/ui/Toast';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Label } from '../../components/ui/Label';
+import { Select } from '../../components/ui/Select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../../components/ui/Card';
 import { Spinner } from '../../components/ui/Spinner';
+import { UserRole } from '@poc-admin-form/shared';
 
 export const CreateUser = () => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
+    const [role, setRole] = useState<UserRole>(UserRole.USER);
     // Password hardcoded as per instructions
     const password = 'password123';
 
@@ -29,33 +32,14 @@ export const CreateUser = () => {
 
         setLoading(true);
         try {
-            // Note: We are using the 'register' function from AuthContext which likely logs the user in automatically after registration.
-            // THIS IS AN ISSUE if the Admin is doing the registering.
-            // We should use the service directly or a specific admin action, but `register` in context typically sets global user state.
-            // IF we use 'register' from context, it will log out the Admin and log in the new User.
-            // FIX: We need a way to create user without auto-login.
-            // Since I cannot change backend easily to add "admin create user" endpoint without risk,
-            // I will Assume `register` call does returns the user but `useAuth` context wraps it and sets state.
-            // I should IMPORT authService directly here to avoid Context State side effects.
-
-            // However, the instructions say "Move the registering of the users part to the admin panel".
-            // I'll assume for now I should use a direct service call if possible.
-
-            // Let's rely on importing the service directly in the component to bypass context state update.
-            // But I need to check `auth.service.ts` first. I'll gamble on `register` endpoint existing.
-            // Wait, if I use `authService.register`, it might still be just a public registration.
-            // The prompt says "admin can register the users".
-
-            // I will use a direct fetch or service call here.
-            // Actually, let's use the context's register for now but realize it might swap the session.
-            // If it swaps session, that's bad UX.
-            // I will try to use the CodeContent to import the service directly.
-
+            // Dynamically import authService to call register directly.
+            // This prevents the AuthContext from automatically updating the current session 
+            // to the newly created user, allowing the Super Admin to stay logged in.
             await import('../../services/auth.service').then(async (service) => {
-                await service.register({ name, email, password });
+                await service.register({ name, email, password, role });
             });
 
-            addToast(`User ${name} created successfully with password: ${password}`, 'success');
+            addToast(`User ${name} (${role}) created successfully with password: ${password}`, 'success');
             // Navigate back to dashboard or users list
             navigate('/admin/dashboard');
 
@@ -78,16 +62,31 @@ export const CreateUser = () => {
                 </CardHeader>
                 <form onSubmit={handleSubmit}>
                     <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="name">Full Name</Label>
-                            <Input
-                                id="name"
-                                value={name}
-                                onChange={e => setName(e.target.value)}
-                                placeholder="John Doe"
-                                disabled={loading}
-                            />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="name">Full Name</Label>
+                                <Input
+                                    id="name"
+                                    value={name}
+                                    onChange={e => setName(e.target.value)}
+                                    placeholder="John Doe"
+                                    disabled={loading}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="role">Role</Label>
+                                <Select
+                                    id="role"
+                                    value={role}
+                                    onChange={(e) => setRole(e.target.value as UserRole)}
+                                    disabled={loading}
+                                >
+                                    <option value={UserRole.USER}>User</option>
+                                    <option value={UserRole.ADMIN}>Admin</option>
+                                </Select>
+                            </div>
                         </div>
+
                         <div className="space-y-2">
                             <Label htmlFor="email">Email Address</Label>
                             <Input

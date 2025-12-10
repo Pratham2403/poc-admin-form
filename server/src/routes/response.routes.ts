@@ -8,6 +8,6 @@ const router = express.Router();
 router.post('/', authenticate, submitResponse);
 router.put('/:id', authenticate, updateResponse);
 router.get('/my', authenticate, getMyResponses);
-router.get('/form/:formId', authenticate, authorize([UserRole.ADMIN]), getResponses);
+router.get('/form/:formId', authenticate, authorize([UserRole.ADMIN, UserRole.SUPERADMIN]), getResponses);
 
 export default router;

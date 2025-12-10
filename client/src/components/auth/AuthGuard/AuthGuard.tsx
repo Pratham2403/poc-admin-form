@@ -25,7 +25,7 @@ export const AuthGuard = ({ roles }: AuthGuardProps) => {
 
     // STRICT SEPARATION LOGIC
     const isAdminPath = location.pathname.startsWith('/admin');
-    const isAdminUser = user.role === UserRole.ADMIN;
+    const isAdminUser = user.role === UserRole.ADMIN || user.role === UserRole.SUPERADMIN;
 
     if (isAdminPath && !isAdminUser) {
         // User trying to access Admin pages -> Kick to User land

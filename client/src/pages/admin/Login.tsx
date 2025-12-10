@@ -19,7 +19,7 @@ export const AdminLogin = () => {
 
     useEffect(() => {
         if (user) {
-            if (user.role === UserRole.ADMIN) {
+            if (user.role === UserRole.ADMIN || user.role === UserRole.SUPERADMIN) {
                 navigate('/admin/dashboard', { replace: true });
             } else {
                 // If a regular user tries to visit admin login, they are technically logged in.
@@ -56,7 +56,7 @@ export const AdminLogin = () => {
             const storedUser = localStorage.getItem(import.meta.env.VITE_USER_STORAGE_KEY || 'user');
             if (storedUser) {
                 const userData = JSON.parse(storedUser);
-                if (userData.role !== UserRole.ADMIN) {
+                if (userData.role !== UserRole.ADMIN && userData.role !== UserRole.SUPERADMIN) {
                     await logout();
                     throw new Error('Access Denied. Admins only.');
                 }

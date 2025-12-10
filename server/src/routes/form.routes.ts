@@ -7,10 +7,10 @@ import { validateSheetAccess } from '../middlewares/sheetValidation.middleware.j
 
 const router = express.Router();
 
-router.post('/', authenticate, authorize([UserRole.ADMIN]), validateSheetAccess, createForm);
+router.post('/', authenticate, authorize([UserRole.ADMIN, UserRole.SUPERADMIN]), validateSheetAccess, createForm);
 router.get('/', authenticate, getForms);
 router.get('/:id', authenticate, getFormById);
-router.put('/:id', authenticate, authorize([UserRole.ADMIN]), validateSheetAccess, updateForm);
-router.delete('/:id', authenticate, authorize([UserRole.ADMIN]), deleteForm);
+router.put('/:id', authenticate, authorize([UserRole.ADMIN, UserRole.SUPERADMIN]), validateSheetAccess, updateForm);
+router.delete('/:id', authenticate, authorize([UserRole.ADMIN, UserRole.SUPERADMIN]), deleteForm);
 
 export default router;

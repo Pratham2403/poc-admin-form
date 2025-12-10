@@ -6,7 +6,7 @@ import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '.
 
 export const register = async (req: Request, res: Response) => {
     try {
-        const { email, password, name } = req.body;
+        const { email, password, name, role } = req.body;
         const userExists = await User.findOne({ email });
 
         if (userExists) {
@@ -20,7 +20,7 @@ export const register = async (req: Request, res: Response) => {
             email,
             password: hashedPassword,
             name,
-            role: UserRole.USER
+            role
         });
 
         // if (user) {

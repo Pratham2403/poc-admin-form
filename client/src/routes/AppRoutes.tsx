@@ -23,7 +23,7 @@ export const AppRoutes = () => {
             <Route path="/admin/login" element={<AdminLogin />} />
 
             {/* ADMIN PORTAL */}
-            <Route element={<AuthGuard roles={[UserRole.ADMIN]} />}>
+            <Route element={<AuthGuard roles={[UserRole.ADMIN, UserRole.SUPERADMIN]} />}>
                 <Route element={<AdminLayout />}>
                     <Route path="/admin/dashboard" element={<AdminDashboard />} />
 
@@ -36,7 +36,11 @@ export const AppRoutes = () => {
                     {/* Admin Actions */}
                     <Route path="/admin/create" element={<CreateForm />} />
                     <Route path="/admin/edit/:id" element={<EditForm />} />
-                    <Route path="/admin/users/create" element={<CreateUser />} />
+
+                    {/* Super Admin Actions */}
+                    <Route element={<AuthGuard roles={[UserRole.SUPERADMIN]} />}>
+                        <Route path="/admin/users/create" element={<CreateUser />} />
+                    </Route>
 
                     {/* Default Admin Redirect */}
                     <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />

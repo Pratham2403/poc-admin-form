@@ -4,6 +4,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useToast } from '../../ui/Toast';
 import { Button } from '../../ui/Button';
 import { ModeToggle } from '../../ui/mode-toggle';
+import { UserRole } from '@poc-admin-form/shared';
 
 export const AdminLayout = () => {
     const { user, logout } = useAuth();
@@ -63,7 +64,9 @@ export const AdminLayout = () => {
                     </div>
                     <NavLink to="/admin/forms">Forms</NavLink>
                     <NavLink to="/admin/my-responses">My Responses</NavLink>
-                    <NavLink to="/admin/users/create">Create User</NavLink>
+                    {user?.role === UserRole.SUPERADMIN && (
+                        <NavLink to="/admin/users/create">Create User</NavLink>
+                    )}
                 </nav>
             </div>
 
