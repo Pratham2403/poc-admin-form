@@ -6,8 +6,8 @@ export const createForm = async (data: Partial<IForm>) => {
     return response.data;
 };
 
-export const getForms = async () => {
-    const response = await api.get('/forms');
+export const getForms = async (page = 1, limit = 9) => {
+    const response = await api.get('/forms', { params: { page, limit } });
     return response.data;
 };
 

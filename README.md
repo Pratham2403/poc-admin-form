@@ -1,4 +1,4 @@
-# Apparent Energy - Form Management System
+# FormSuite - Form Management System
 
 A full-stack form management application with role-based access control, Google Sheets integration, and a modern admin interface.
 

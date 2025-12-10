@@ -154,7 +154,7 @@ export const QuestionItem = ({
                                 {errors[`question_${index}_options`]}
                             </p>
                         )}
-                                                <Button
+                        <Button
                             variant="outline"
                             size="sm"
                             onClick={() => addOption(q.id)}

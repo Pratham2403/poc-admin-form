@@ -12,13 +12,15 @@ interface FormRendererProps {
     onSubmit: (answers: Record<string, any>) => Promise<void>;
     isSubmitting?: boolean;
     initialAnswers?: Record<string, any>;
+    readOnly?: boolean;
 }
 
 export const FormRenderer: React.FC<FormRendererProps> = ({
     form,
     onSubmit,
     isSubmitting = false,
-    initialAnswers = {}
+    initialAnswers = {},
+    readOnly = false
 }) => {
     const [answers, setAnswers] = useState<Record<string, any>>(initialAnswers);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -75,7 +77,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
                         value={answers[q.id] || ''}
                         onChange={e => handleInputChange(q.id, e.target.value)}
                         placeholder="Your answer"
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || readOnly}
                     />
                 );
             case QuestionType.PARAGRAPH:
@@ -85,7 +87,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
                         onChange={e => handleInputChange(q.id, e.target.value)}
                         placeholder="Your answer"
                         rows={4}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || readOnly}
                     />
                 );
             case QuestionType.MULTIPLE_CHOICE:
@@ -102,7 +104,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
                                     value={opt}
                                     checked={answers[q.id] === opt}
                                     onChange={() => handleInputChange(q.id, opt)}
-                                    disabled={isSubmitting}
+                                    disabled={isSubmitting || readOnly}
                                     className="h-4 w-4 text-primary border-input focus:ring-primary"
                                 />
                                 <span className="text-sm">{opt}</span>
@@ -129,7 +131,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
                                             handleInputChange(q.id, current.filter((v: string) => v !== opt));
                                         }
                                     }}
-                                    disabled={isSubmitting}
+                                    disabled={isSubmitting || readOnly}
                                     className="h-4 w-4 rounded text-primary border-input focus:ring-primary"
                                 />
                                 <span className="text-sm">{opt}</span>
@@ -142,7 +144,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
                     <Select
                         value={answers[q.id] || ''}
                         onChange={e => handleInputChange(q.id, e.target.value)}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || readOnly}
                     >
                         <option value="">Select an option</option>
                         {q.options?.map((opt, i) => (
@@ -156,7 +158,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
                         type="date"
                         value={answers[q.id] || ''}
                         onChange={e => handleInputChange(q.id, e.target.value)}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || readOnly}
                     />
                 );
             case QuestionType.TIME:
@@ -165,7 +167,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
                         type="time"
                         value={answers[q.id] || ''}
                         onChange={e => handleInputChange(q.id, e.target.value)}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || readOnly}
                     />
                 );
             default:
@@ -221,26 +223,28 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
             ))}
 
             {/* Submit Section */}
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4">
-                <Button type="submit" size="lg" disabled={isSubmitting} className="w-full sm:w-auto">
-                    {isSubmitting ? (
-                        <>
-                            <Spinner size="sm" className="mr-2" />
-                            Submitting...
-                        </>
-                    ) : (
-                        'Submit'
-                    )}
-                </Button>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => setAnswers(initialAnswers)}
-                    disabled={isSubmitting}
-                >
-                    Clear form
-                </Button>
-            </div>
+            {!readOnly && (
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4">
+                    <Button type="submit" size="lg" disabled={isSubmitting} className="w-full sm:w-auto">
+                        {isSubmitting ? (
+                            <>
+                                <Spinner size="sm" className="mr-2" />
+                                Submitting...
+                            </>
+                        ) : (
+                            'Submit'
+                        )}
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => setAnswers(initialAnswers)}
+                        disabled={isSubmitting}
+                    >
+                        Clear form
+                    </Button>
+                </div>
+            )}
         </form>
     );
 };

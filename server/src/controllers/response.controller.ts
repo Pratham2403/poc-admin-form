@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import FormResponse from '../models/FormResponse.model.js';
 import Form from '../models/Form.model.js';
 import User from '../models/User.model.js'; // Added User import
@@ -20,12 +21,11 @@ export const submitResponse = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ message: 'Form not found' });
         }
 
-        // CRITICAL FIX: Check for duplicate submission BEFORE Google Sheets sync
-        // This prevents orphaned spreadsheet entries from parallel requests
-        const existingResponse = await FormResponse.findOne({ formId, userId });
-        if (existingResponse) {
-            return res.status(409).json({ message: 'You have already submitted this form.' });
-        }
+        // Duplicate check removed to allow multiple responses per user
+        // const existingResponse = await FormResponse.findOne({ formId, userId });
+        // if (existingResponse) {
+        //     return res.status(409).json({ message: 'You have already submitted this form.' });
+        // }
 
         // Validate Short Answer Lengths
         for (const q of form.questions) {
@@ -161,9 +161,118 @@ export const getResponses = async (req: AuthRequest, res: Response) => {
 
 export const getMyResponses = async (req: AuthRequest, res: Response) => {
     try {
-        const responses = await FormResponse.find({ userId: req.user.userId }).populate('formId', 'title allowEditResponse');
-        res.json(responses);
+        const userId = req.user.userId;
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const search = (req.query.search as string) || '';
+        const skip = (page - 1) * limit;
+
+        const pipeline: any[] = [
+            // 1. Match responses by user
+            { $match: { userId: new mongoose.Types.ObjectId(userId) } },
+
+            // 2. Lookup Form details
+            {
+                $lookup: {
+                    from: 'forms',
+                    localField: 'formId',
+                    foreignField: '_id',
+                    as: 'form'
+                }
+            },
+            { $unwind: '$form' },
+
+            // 3. Search Filter (if provided)
+            ...(search ? [{
+                $match: {
+                    'form.title': { $regex: search, $options: 'i' }
+                }
+            }] : []),
+
+            // 4. Group by Form
+            {
+                $group: {
+                    _id: '$form._id',
+                    form: { $first: '$form' },
+                    responses: { $push: '$$ROOT' },
+                    latestActivity: { $max: '$updatedAt' },
+                    responseCount: { $sum: 1 }
+                }
+            },
+
+            // 5. Sort Groups by latest activity
+            { $sort: { latestActivity: -1 } },
+
+            // 6. Project clean structure (remove form from inside responses to avoid duplication if needed, but keeping simple for now)
+            {
+                $project: {
+                    _id: 1,
+                    form: {
+                        _id: 1,
+                        title: 1,
+                        status: 1,
+                        allowEditResponse: 1
+                    },
+                    responses: {
+                        _id: 1,
+                        answers: 1,
+                        createdAt: 1,
+                        updatedAt: 1
+                    },
+                    latestActivity: 1,
+                    responseCount: 1
+                }
+            },
+
+            // 7. Facet for Pagination and Total Count
+            {
+                $facet: {
+                    data: [
+                        { $skip: skip },
+                        { $limit: limit }
+                    ],
+                    totalCount: [
+                        { $count: 'count' }
+                    ]
+                }
+            }
+        ];
+
+        const result = await FormResponse.aggregate(pipeline);
+
+        const data = result[0].data;
+        const total = result[0].totalCount[0] ? result[0].totalCount[0].count : 0;
+
+        res.json({
+            data,
+            pagination: {
+                total,
+                page,
+                limit,
+                pages: Math.ceil(total / limit)
+            }
+        });
+
     } catch (error) {
+        console.error('Error in getMyResponses:', error);
         res.status(500).json({ message: 'Error fetching responses', error });
+    }
+};
+
+export const getResponseById = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.userId;
+
+        const response = await FormResponse.findOne({ _id: id, userId })
+            .populate('formId', 'title allowEditResponse questions');
+
+        if (!response) {
+            return res.status(404).json({ message: 'Response not found' });
+        }
+
+        res.json(response);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching response', error });
     }
 };

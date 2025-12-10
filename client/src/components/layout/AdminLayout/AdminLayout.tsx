@@ -42,10 +42,10 @@ export const AdminLayout = () => {
         <div className="flex flex-col h-full">
             <div className="p-6 border-b flex items-center gap-2">
                 <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/60 rounded-lg flex items-center justify-center text-primary-foreground font-bold text-lg">
-                    AE
+                    FS
                 </div>
                 <span className="font-bold text-lg bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                    Admin Portal
+                    FormSuite
                 </span>
                 <div className="ml-auto hidden md:block">
                     <ModeToggle />
@@ -90,9 +90,9 @@ export const AdminLayout = () => {
     );
 
     return (
-        <div className="min-h-screen bg-background flex">
+        <div className="h-screen w-full bg-background flex overflow-hidden">
             {/* Desktop Sidebar */}
-            <aside className="w-64 border-r bg-muted/10 hidden md:flex flex-col">
+            <aside className="w-64 border-r bg-muted/10 hidden md:flex flex-col flex-none">
                 <SidebarContent />
             </aside>
 
@@ -119,8 +119,8 @@ export const AdminLayout = () => {
             )}
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col min-h-screen">
-                <header className="h-16 border-b flex items-center justify-between px-6 md:hidden sticky top-0 bg-background/95 backdrop-blur z-20">
+            <div className="flex-1 flex flex-col h-full min-w-0">
+                <header className="h-16 border-b flex items-center justify-between px-6 md:hidden flex-none bg-background/95 backdrop-blur z-20">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => setIsMobileMenuOpen(true)}
@@ -134,7 +134,7 @@ export const AdminLayout = () => {
                     <ModeToggle />
                 </header>
 
-                <main className="flex-1 p-6 overflow-y-auto">
+                <main className="flex-1 p-6 overflow-y-auto scroll-smooth">
                     <Outlet />
                 </main>
             </div>

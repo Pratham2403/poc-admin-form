@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getFormById } from '../../services/form.service';
-import { getMyResponses, updateResponse } from '../../services/response.service';
+import { updateResponse, getResponseById } from '../../services/response.service';
 import { FormRenderer } from '../../components/forms/FormRenderer/FormRenderer';
 import { type IForm } from '@poc-admin-form/shared';
 import { useToast } from '../../components/ui/Toast';
@@ -18,6 +18,8 @@ interface ResponseData {
 export const EditResponse = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
+    const isViewMode = location.pathname.endsWith('/view');
     const { addToast } = useToast();
     const [form, setForm] = useState<IForm | null>(null);
     const [response, setResponse] = useState<ResponseData | null>(null);
@@ -33,32 +35,45 @@ export const EditResponse = () => {
 
     const loadData = async (responseId: string) => {
         try {
-            const responses = await getMyResponses();
-            const foundResponse = responses.find((r: ResponseData) => r._id === responseId);
+            const responseData = await getResponseById(responseId);
 
-            if (!foundResponse) {
+            if (!responseData) {
+                // Should be caught by 404 but just in case
                 addToast('Response not found', 'error');
                 navigate(getPath('/my-responses'));
                 return;
             }
 
-            setResponse(foundResponse);
+            setResponse(responseData);
 
-            // Get the form ID (handle both populated and non-populated cases)
-            const formId = typeof foundResponse.formId === 'object'
-                ? foundResponse.formId._id
-                : foundResponse.formId;
+            // Using populate on backend, formId is now an object
+            // Just in case, handle both for robustness
+            const formId = typeof responseData.formId === 'object'
+                ? responseData.formId._id
+                : responseData.formId;
 
-            const formData = await getFormById(formId);
+            // If populated, we might already have details, but to be consistent with existing logic
+            // and types (IForm), we can fetch the full form or use what we have.
+            // The backend populate includes 'allowEditResponse' which is crucial.
 
-            if (!formData.allowEditResponse) {
+            // If the populated form has everything we need, we could use it.
+            // However, getFormById might return more complete "builder" data (like all questions structured).
+            // Let's stick to getFormById for the FormRenderer to be safe, but we can check allowEditResponse early.
+
+            const formObj = typeof responseData.formId === 'object' ? responseData.formId : null;
+
+            if (formObj && !formObj.allowEditResponse && !isViewMode) {
                 addToast('Editing is not allowed for this form', 'warning');
                 navigate(getPath('/my-responses'));
                 return;
             }
 
+            // Fetch full form for renderer (in case populate isn't enough)
+            const formData = await getFormById(formId);
             setForm(formData);
+
         } catch (error) {
+            console.error(error);
             addToast('Failed to load response data', 'error');
             navigate(getPath('/my-responses'));
         } finally {
@@ -98,15 +113,22 @@ export const EditResponse = () => {
     return (
         <div className="bg-muted/30 min-h-screen py-8 -mt-4 -mx-4 px-4">
             <div className="max-w-3xl mx-auto mb-4">
-                <div className="bg-yellow-500/10 border border-yellow-500/30 text-yellow-600 dark:text-yellow-400 px-4 py-3 rounded-lg">
-                    <strong>Editing mode:</strong> You're updating your previous response to this form.
-                </div>
+                {isViewMode ? (
+                    <div className="bg-blue-500/10 border border-blue-500/30 text-blue-600 dark:text-blue-400 px-4 py-3 rounded-lg">
+                        <strong>View mode:</strong> You are viewing your previously submitted response.
+                    </div>
+                ) : (
+                    <div className="bg-yellow-500/10 border border-yellow-500/30 text-yellow-600 dark:text-yellow-400 px-4 py-3 rounded-lg">
+                        <strong>Editing mode:</strong> You're updating your previous response to this form.
+                    </div>
+                )}
             </div>
             <FormRenderer
                 form={form}
                 onSubmit={handleSubmit}
                 isSubmitting={submitting}
                 initialAnswers={response.answers}
+                readOnly={isViewMode}
             />
         </div>
     );

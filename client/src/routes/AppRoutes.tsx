@@ -32,6 +32,7 @@ export const AppRoutes = () => {
                     <Route path="/admin/forms/:id" element={<FillForm />} />
                     <Route path="/admin/my-responses" element={<MyResponses />} />
                     <Route path="/admin/my-responses/:id/edit" element={<EditResponse />} />
+                    <Route path="/admin/my-responses/:id/view" element={<EditResponse />} />
 
                     {/* Admin Actions */}
                     <Route path="/admin/create" element={<CreateForm />} />
@@ -54,6 +55,7 @@ export const AppRoutes = () => {
                     <Route path="/forms/:id" element={<FillForm />} />
                     <Route path="/my-responses" element={<MyResponses />} />
                     <Route path="/my-responses/:id/edit" element={<EditResponse />} />
+                    <Route path="/my-responses/:id/view" element={<EditResponse />} />
 
                     {/* Default User Redirect */}
                     <Route path="/" element={<Navigate to="/forms" replace />} />

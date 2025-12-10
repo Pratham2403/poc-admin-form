@@ -18,6 +18,9 @@ export const createForm = async (req: AuthRequest, res: Response) => {
 export const getForms = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user.userId;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 9; // Default to 9 for grid view (3x3)
+    const skip = (page - 1) * limit;
 
     // Form creators can see all their forms (except deleted)
     // Everyone else (including other admins) can only see published forms
@@ -35,8 +38,22 @@ export const getForms = async (req: AuthRequest, res: Response) => {
       ]
     };
 
-    const forms = await Form.find(query).sort({ createdAt: -1 });
-    res.json(forms);
+    const forms = await Form.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Form.countDocuments(query);
+
+    res.json({
+      data: forms,
+      pagination: {
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: "Error fetching forms", error });
   }

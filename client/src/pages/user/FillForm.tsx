@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getFormById } from '../../services/form.service';
-import { submitResponse, getMyResponses } from '../../services/response.service';
+import { submitResponse } from '../../services/response.service';
 import { FormRenderer } from '../../components/forms/FormRenderer/FormRenderer';
 import { type IForm } from '@poc-admin-form/shared';
 import { useToast } from '../../components/ui/Toast';
 import { PageLoader } from '../../components/ui/Spinner';
 import { Card, CardContent } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
+
 import { usePortalPath } from '../../hooks/usePortalPath';
 
 export const FillForm = () => {
@@ -17,7 +17,6 @@ export const FillForm = () => {
     const [form, setForm] = useState<IForm | null>(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-    const [hasSubmitted, setHasSubmitted] = useState(false);
     const { getPath } = usePortalPath();
 
     useEffect(() => {
@@ -28,28 +27,7 @@ export const FillForm = () => {
 
     const loadForm = async (formId: string) => {
         try {
-            const [formData, myResponses] = await Promise.all([
-                getFormById(formId),
-                getMyResponses()
-            ]);
-
-            // Check for existing response
-            const existingResponse = myResponses.find((r: any) => {
-                const rFormId = typeof r.formId === 'object' ? r.formId._id : r.formId;
-                return rFormId === formId;
-            });
-
-            if (existingResponse) {
-                if (formData.allowEditResponse) {
-                    addToast('You have already submitted this form. Redirecting to edit...', 'info');
-                    navigate(getPath(`/my-responses/${existingResponse._id}/edit`));
-                    return;
-                } else {
-                    setHasSubmitted(true);
-                    setForm(formData); // Still set form data to show title potentially? Or just block.
-                }
-            }
-
+            const formData = await getFormById(formId);
             setForm(formData);
         } catch (error) {
             addToast('Form not found or unavailable', 'error');
@@ -76,20 +54,7 @@ export const FillForm = () => {
 
     if (loading) return <PageLoader />;
 
-    if (hasSubmitted) {
-        return (
-            <Card className="max-w-md mx-auto mt-16">
-                <CardContent className="text-center py-8">
-                    <div className="text-4xl mb-4">✅</div>
-                    <h2 className="text-xl font-semibold mb-2">Already Submitted</h2>
-                    <p className="text-muted-foreground">You have already submitted a response for this form.</p>
-                    <Button className="mt-4" onClick={() => navigate(getPath('/my-responses'))}>
-                        View My Responses
-                    </Button>
-                </CardContent>
-            </Card>
-        );
-    }
+    // Removed Already Submitted blocking logic
 
     if (!form) {
         return (

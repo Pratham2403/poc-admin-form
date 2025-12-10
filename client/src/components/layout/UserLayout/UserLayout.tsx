@@ -44,10 +44,10 @@ export const UserLayout = () => {
                     {/* Logo */}
                     <Link to="/" className="flex items-center gap-2">
                         <div className="w-9 h-8 bg-gradient-to-br from-primary to-primary/60 rounded-lg flex items-center justify-center text-primary-foreground font-bold text-lg">
-                            AE
+                            FS
                         </div>
                         <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                            Apparent Energy Forms
+                            FormSuite
                         </span>
                     </Link>
 
@@ -140,7 +140,7 @@ export const UserLayout = () => {
             {/* Footer */}
             <footer className="border-t bg-muted/30 mt-auto">
                 <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
-                    <p>&copy; {new Date().getFullYear()} Apparent Energy. All rights reserved.</p>
+                    <p>&copy; {new Date().getFullYear()} FormSuite. All rights reserved.</p>
                 </div>
             </footer>
         </div>

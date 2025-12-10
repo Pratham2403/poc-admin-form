@@ -8,7 +8,7 @@ import {
 import { Button } from "../../ui/Button";
 import { Input } from "../../ui/Input";
 import { Textarea } from "../../ui/Textarea";
-import { Switch } from "../../ui/Switch";
+
 import { Label } from "../../ui/Label";
 import {
   Card,
@@ -302,7 +302,8 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center justify-between rounded-lg border p-4">
+          {/* <div className="flex items-center justify-between rounded-lg border p-4">
+            
             <div className="space-y-0.5">
               <Label htmlFor="allowEdit">Allow Response Editing</Label>
               <p className="text-xs text-muted-foreground">
@@ -313,8 +314,9 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
               id="allowEdit"
               checked={allowEditResponse}
               onCheckedChange={setAllowEditResponse}
-            />
-          </div>
+            /> 
+           
+          </div> */}
         </CardContent>
       </Card>
 
