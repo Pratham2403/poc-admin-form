@@ -99,8 +99,9 @@ export const CreateUser = () => {
                             />
                         </div>
                         <div className="bg-muted p-4 rounded-md text-sm text-muted-foreground">
-                            <p>⚠️ The user will need to change their password after first login (if implemented).</p>
                             <p>Current Default Password: <code className="bg-background px-1 rounded border">{password}</code></p>
+                            <p>⚠️ The user cannot change the current default password.</p>
+
                         </div>
                     </CardContent>
                     <CardFooter>
