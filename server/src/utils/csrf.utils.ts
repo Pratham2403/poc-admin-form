@@ -47,7 +47,11 @@ export const verifyCSRFToken = (req: Request, res: Response, next: NextFunction)
         }
 
         // Use timing-safe comparison to prevent timing attacks
-        if (!crypto.timingSafeEqual(Buffer.from(cookieToken), Buffer.from(headerToken as string))) {
+        const cookieBuffer = Buffer.from(cookieToken);
+        const headerBuffer = Buffer.from(headerToken as string);
+        
+        // Check lengths match before timingSafeEqual to prevent DoS via length mismatch exception
+        if (cookieBuffer.length !== headerBuffer.length || !crypto.timingSafeEqual(cookieBuffer, headerBuffer)) {
             return res.status(403).json({
                 message: 'Invalid CSRF token. Please refresh and try again.'
             });

@@ -38,12 +38,11 @@ export const getForms = async (req: AuthRequest, res: Response) => {
       ]
     };
 
-    const forms = await Form.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-
-    const total = await Form.countDocuments(query);
+    // Fetch forms and total count in parallel
+    const [forms, total] = await Promise.all([
+      Form.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Form.countDocuments(query)
+    ]);
 
     res.json({
       data: forms,

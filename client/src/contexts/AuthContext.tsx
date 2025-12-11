@@ -5,7 +5,6 @@ import * as authService from '../services/auth.service';
 interface AuthContextType {
     user: IUser | null;
     login: (credentials: any) => Promise<void>;
-    register: (data: any) => Promise<void>;
     logout: () => Promise<void>;
     loading: boolean;
 }
@@ -44,12 +43,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem(userStorageKey, JSON.stringify(data));
     };
 
-    const register = async (formData: any) => {
-        const data = await authService.register(formData);
-        setUser(data);
-        localStorage.setItem(userStorageKey, JSON.stringify(data));
-    };
-
     const logout = async () => {
         await authService.logout();
         setUser(null);
@@ -57,7 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+        <AuthContext.Provider value={{ user, login, logout, loading }}>
             {children}
         </AuthContext.Provider>
     );

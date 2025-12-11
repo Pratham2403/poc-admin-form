@@ -4,6 +4,8 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { connectDB } from './database/connection.js';
 import { attachCSRFToken, verifyCSRFToken } from './utils/csrf.utils.js';
+import helmet from 'helmet';
+import { apiRateLimiter } from './middlewares/ratelimit.middleware.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -12,6 +14,14 @@ const PORT = process.env.PORT || 5000;
 app.set('trust proxy', 1);
 
 // Middleware
+
+
+// Security Headers
+app.use(helmet());
+
+// Rate Limiting
+app.use('/api', apiRateLimiter);
+
 // Limit set to 2mb to accommodate larger form submissions while mitigating DoS risks
 app.use(express.json({ limit: '2mb' }));
 app.use(cookieParser());

@@ -149,15 +149,15 @@ export const updateResponse = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const getResponses = async (req: AuthRequest, res: Response) => {
-    try {
-        const { formId } = req.params;
-        const responses = await FormResponse.find({ formId }).populate('userId', 'name email');
-        res.json(responses);
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching responses', error });
-    }
-};
+// export const getResponses = async (req: AuthRequest, res: Response) => {
+//     try {
+//         const { formId } = req.params;
+//         const responses = await FormResponse.find({ formId }).populate('userId', 'name email');
+//         res.json(responses);
+//     } catch (error) {
+//         res.status(500).json({ message: 'Error fetching responses', error });
+//     }
+// };
 
 export const getMyResponses = async (req: AuthRequest, res: Response) => {
     try {
