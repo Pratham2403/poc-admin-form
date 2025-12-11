@@ -21,11 +21,14 @@ export const submitResponse = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ message: 'Form not found' });
         }
 
-        // Duplicate check removed to allow multiple responses per user
-        // const existingResponse = await FormResponse.findOne({ formId, userId });
-        // if (existingResponse) {
-        //     return res.status(409).json({ message: 'You have already submitted this form.' });
-        // }
+        // Anonymous Submission Check
+        if (!userId) {
+            if (!form.isPublic) {
+                return res.status(401).json({ message: 'You must be logged in to submit this form.' });
+            }
+            // If public + anonymous, we allow it.
+            // No duplicate check for public forms (as per requirements)
+        }
 
         // Validate Short Answer Lengths
         for (const q of form.questions) {
@@ -70,7 +73,7 @@ export const submitResponse = async (req: AuthRequest, res: Response) => {
 
         const response = await FormResponse.create({
             formId,
-            userId,
+            userId: userId || null, // Explicitly set to null if undefined
             answers, // Sanitized answers
             googleSheetRowNumber
         });

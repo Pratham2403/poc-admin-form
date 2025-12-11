@@ -30,6 +30,7 @@ const FormSchema: Schema = new Schema({
     status: { type: String, enum: Object.values(FormStatus), default: FormStatus.DRAFT },
     googleSheetUrl: { type: String },
     allowEditResponse: { type: Boolean, default: false },
+    isPublic: { type: Boolean, default: false },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     responseCount: { type: Number, default: 0 }
 }, { timestamps: true });

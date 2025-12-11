@@ -16,7 +16,7 @@ export const UserLayout = () => {
         try {
             await logout();
             addToast('Logged out successfully', 'success');
-            navigate('/login');
+            navigate('/forms');
         } catch (error) {
             addToast('Failed to logout', 'error');
         }
@@ -54,26 +54,36 @@ export const UserLayout = () => {
                     {/* Navigation - Desktop */}
                     <nav className="hidden md:flex items-center gap-1">
                         <NavLink to="/forms">Forms</NavLink>
-                        <NavLink to="/my-responses">My Responses</NavLink>
+                        {user && <NavLink to="/my-responses">My Responses</NavLink>}
                     </nav>
 
                     {/* User Info & Actions - Desktop */}
                     <div className="hidden md:flex items-center gap-4">
                         <ModeToggle />
 
-                        <div className="flex items-center gap-3">
-                            <div className="text-right">
-                                <p className="text-sm font-medium">{user?.name || user?.email}</p>
-                                <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
-                            </div>
-                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground font-semibold">
-                                {(user?.name || user?.email)?.charAt(0).toUpperCase()}
-                            </div>
-                        </div>
+                        {user ? (
+                            <>
+                                <div className="flex items-center gap-3">
+                                    <div className="text-right">
+                                        <p className="text-sm font-medium">{user.name || user.email}</p>
+                                        <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
+                                    </div>
+                                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground font-semibold">
+                                        {(user.name || user.email)?.charAt(0).toUpperCase()}
+                                    </div>
+                                </div>
 
-                        <Button variant="outline" size="sm" onClick={handleLogout}>
-                            Logout
-                        </Button>
+                                <Button variant="outline" size="sm" onClick={handleLogout}>
+                                    Logout
+                                </Button>
+                            </>
+                        ) : (
+                            <Link to="/login">
+                                <Button size="sm">
+                                    Login
+                                </Button>
+                            </Link>
+                        )}
                     </div>
 
                     {/* Mobile Menu Toggle */}
@@ -96,15 +106,17 @@ export const UserLayout = () => {
                 {/* Mobile Navigation Drawer */}
                 {isMobileMenuOpen && (
                     <div className="md:hidden border-t bg-background absolute left-0 right-0 h-[calc(100vh-4rem)] p-4 space-y-4 animate-in slide-in-from-top-5">
-                        <div className="flex items-center gap-3 mb-6 p-4 bg-muted/50 rounded-lg">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground font-semibold text-lg">
-                                {(user?.name || user?.email)?.charAt(0).toUpperCase()}
+                        {user && (
+                            <div className="flex items-center gap-3 mb-6 p-4 bg-muted/50 rounded-lg">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground font-semibold text-lg">
+                                    {(user.name || user.email)?.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <p className="font-medium">{user.name || user.email}</p>
+                                    <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="font-medium">{user?.name || user?.email}</p>
-                                <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
-                            </div>
-                        </div>
+                        )}
 
                         <nav className="flex flex-col gap-2">
                             <Link
@@ -114,19 +126,29 @@ export const UserLayout = () => {
                             >
                                 Forms
                             </Link>
-                            <Link
-                                to="/my-responses"
-                                onClick={() => setIsMobileMenuOpen(false)}
-                                className={`p-4 rounded-lg border hover:bg-accent transition-colors ${isActive('/my-responses') ? 'border-primary bg-primary/5' : ''}`}
-                            >
-                                My Responses
-                            </Link>
+                            {user && (
+                                <Link
+                                    to="/my-responses"
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    className={`p-4 rounded-lg border hover:bg-accent transition-colors ${isActive('/my-responses') ? 'border-primary bg-primary/5' : ''}`}
+                                >
+                                    My Responses
+                                </Link>
+                            )}
                         </nav>
 
                         <div className="pt-4 border-t">
-                            <Button variant="destructive" className="w-full" onClick={handleLogout}>
-                                Logout
-                            </Button>
+                            {user ? (
+                                <Button variant="destructive" className="w-full" onClick={handleLogout}>
+                                    Logout
+                                </Button>
+                            ) : (
+                                <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>
+                                    <Button className="w-full">
+                                        Login
+                                    </Button>
+                                </Link>
+                            )}
                         </div>
                     </div>
                 )}

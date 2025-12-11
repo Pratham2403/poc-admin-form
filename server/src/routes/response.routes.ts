@@ -1,11 +1,11 @@
 import express from 'express';
 import { submitResponse, getMyResponses, updateResponse, getResponseById } from '../controllers/response.controller.js';
-import { authenticate, authorize } from '../middlewares/auth.middleware.js';
+import { authenticate, optionalAuthenticate } from '../middlewares/auth.middleware.js';
 import { UserRole } from '@poc-admin-form/shared';
 
 const router = express.Router();
 
-router.post('/', authenticate, submitResponse);
+router.post('/', optionalAuthenticate, submitResponse);
 router.put('/:id', authenticate, updateResponse);
 // Order matters! /my must come before /:id otherwise 'my' is treated as an id
 router.get('/my', authenticate, getMyResponses);

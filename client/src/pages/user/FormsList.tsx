@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { getForms } from '../../services/form.service';
-import { getMyResponses } from '../../services/response.service';
 import { type IForm, ViewType } from '@poc-admin-form/shared';
 import { useToast } from '../../components/ui/Toast';
 import { Button } from '../../components/ui/Button';
@@ -12,8 +11,6 @@ import { SearchFilterBar } from '../../components/ui/SearchFilterBar';
 import { ViewToggle } from '../../components/ui/ViewToggle';
 import {
     ClipboardList,
-    CheckCircle,
-    Clock,
     FileText,
     AlertCircle,
     RotateCcw,
@@ -21,15 +18,8 @@ import {
     ChevronRight,
 } from 'lucide-react';
 
-// Define local interface for response group
-interface IResponseGroup {
-    _id: string; // This is the Form ID in the new aggregation
-    [key: string]: unknown;
-}
-
 export const FormsList = () => {
     const [forms, setForms] = useState<IForm[]>([]);
-    const [responses, setResponses] = useState<IResponseGroup[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState('ALL');
@@ -52,17 +42,10 @@ export const FormsList = () => {
     const loadForms = useCallback(async (page = 1) => {
         try {
             setLoading(true);
-            const [formsResponse, responsesData] = await Promise.all([
-                getForms(page, 12),
-                // Fetch a large number of latest responses to ensure we correctly identify
-                // played forms. This is a temporary solution until a dedicated "check status" endpoint exists.
-                getMyResponses(1, 1000)
-            ]);
-
+            const formsResponse = await getForms(page, 12);
             setForms(formsResponse.data);
             setTotalPages(formsResponse.pagination.pages);
             setCurrentPage(formsResponse.pagination.page);
-            setResponses(responsesData.data); // Extract data array from paginated response
         } catch {
             addToast('Failed to load forms', 'error');
         } finally {
@@ -74,19 +57,16 @@ export const FormsList = () => {
         loadForms(currentPage);
     }, [currentPage, loadForms]);
 
-    // Pre-process forms to include response status for easier filtering
-    const processedForms = forms.map(form => {
-        // with the new aggregation, the group _id IS the formId
-        const existingResponse = responses.find((r) => r._id === form._id);
-        return { ...form, existingResponse };
-    });
-
     // Filtering Logic
-    const filteredForms = processedForms.filter(item => {
+    const filteredForms = forms.filter(item => {
         const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()));
 
-        return matchesSearch;
+        const matchesFilter = filterStatus === 'ALL' ||
+            (filterStatus === 'PUBLIC' && item.isPublic) ||
+            (filterStatus === 'PRIVATE' && !item.isPublic);
+
+        return matchesSearch && matchesFilter;
     });
 
     if (loading && forms.length === 0) return <PageLoader />;
@@ -99,7 +79,7 @@ export const FormsList = () => {
                         <ClipboardList className="h-8 w-8 text-primary" />
                         Available Forms
                     </h1>
-                    <p className="text-muted-foreground mt-2 text-lg">Browse active forms and submit your responses securely.</p>
+                    <p className="text-muted-foreground mt-2 text-lg">Browse active forms and submit your responses.</p>
                 </div>
                 <div className="mt-4 md:mt-0 pr-4">
                     <ViewToggle viewType={viewType} onToggle={toggleView} />
@@ -116,12 +96,12 @@ export const FormsList = () => {
                         filterValue={filterStatus}
                         onFilterChange={setFilterStatus}
                         filterOptions={[
-                            { label: 'All Forms', value: 'ALL' }
+                            { label: 'All Forms', value: 'ALL' },
+                            { label: 'Public Forms', value: 'PUBLIC' },
+                            { label: 'Private Forms', value: 'PRIVATE' }
                         ]}
                         searchPlaceholder="Search available forms by title..."
                     />
-
-                    {/* View Toggle removed from here */}
                 </div>
             </div>
 
@@ -164,15 +144,14 @@ export const FormsList = () => {
                                         <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
                                             <FileText className="h-5 w-5 text-primary" />
                                         </div>
-                                        {form.existingResponse ? (
-                                            <span className="flex items-center gap-1.5 text-xs font-semibold bg-blue-100 text-blue-700 px-3 py-1 rounded-full dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800 shadow-sm">
-                                                <CheckCircle className="h-3.5 w-3.5" />
-                                                Responded
+                                        {/* Public vs Private Badge */}
+                                        {form.isPublic ? (
+                                            <span className="flex items-center gap-1.5 text-xs font-semibold bg-green-100 text-green-700 px-3 py-1 rounded-full dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800 shadow-sm">
+                                                Public
                                             </span>
                                         ) : (
                                             <span className="flex items-center gap-1.5 text-xs font-semibold bg-gray-100 text-gray-700 px-3 py-1 rounded-full dark:bg-gray-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700 shadow-sm">
-                                                <Clock className="h-3.5 w-3.5" />
-                                                Available
+                                                Private
                                             </span>
                                         )}
                                     </div>
@@ -193,8 +172,8 @@ export const FormsList = () => {
                                 </CardContent>
                                 <CardFooter className="pt-4 border-t border-border/40 bg-muted/5">
                                     <Link to={getPath(`/forms/${form._id}`)} className="w-full">
-                                        <Button className="w-full shadow-md hover:shadow-lg transition-all gap-2" variant={form.existingResponse ? "outline" : "default"}>
-                                            {form.existingResponse ? 'Submit Another Response' : 'Start Form'}
+                                        <Button className="w-full shadow-md hover:shadow-lg transition-all gap-2">
+                                            Start Form
                                         </Button>
                                     </Link>
                                 </CardFooter>
@@ -208,7 +187,7 @@ export const FormsList = () => {
                                 <thead className="bg-muted/50 border-b border-border/40">
                                     <tr>
                                         <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Form</th>
-                                        <th className="px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                                        <th className="px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">Type</th>
                                         <th className="px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">Questions</th>
                                         <th className="px-6 py-4 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Action</th>
                                     </tr>
@@ -228,15 +207,13 @@ export const FormsList = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                {form.existingResponse ? (
-                                                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-blue-100 text-blue-700 px-3 py-1 rounded-full dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
-                                                        <CheckCircle className="h-3.5 w-3.5" />
-                                                        Responded
+                                                {form.isPublic ? (
+                                                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-green-100 text-green-700 px-3 py-1 rounded-full dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800">
+                                                        Public
                                                     </span>
                                                 ) : (
                                                     <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-gray-100 text-gray-700 px-3 py-1 rounded-full dark:bg-gray-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
-                                                        <Clock className="h-3.5 w-3.5" />
-                                                        Available
+                                                        Private
                                                     </span>
                                                 )}
                                             </td>
@@ -248,8 +225,8 @@ export const FormsList = () => {
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <Link to={getPath(`/forms/${form._id}`)}>
-                                                    <Button size="sm" className="h-8 shadow-md" variant={form.existingResponse ? "outline" : "default"}>
-                                                        {form.existingResponse ? 'Submit Another' : 'Start Form'}
+                                                    <Button size="sm" className="h-8 shadow-md">
+                                                        Start Form
                                                     </Button>
                                                 </Link>
                                             </td>

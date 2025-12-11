@@ -8,7 +8,7 @@ import {
 import { Button } from "../../ui/Button";
 import { Input } from "../../ui/Input";
 import { Textarea } from "../../ui/Textarea";
-
+import { Switch } from "../../ui/Switch";
 import { Label } from "../../ui/Label";
 import {
   Card,
@@ -43,6 +43,9 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
   const [allowEditResponse, setAllowEditResponse] = useState(
     initialData?.allowEditResponse || false
   );
+  const [isPublic, setIsPublic] = useState(
+    initialData?.isPublic || false
+  );
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -56,6 +59,7 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
       setQuestions(initialData.questions || []);
       setGoogleSheetUrl(initialData.googleSheetUrl || "");
       setAllowEditResponse(initialData.allowEditResponse || false);
+      setIsPublic(initialData.isPublic || false);
     }
   }, [initialData]);
 
@@ -186,6 +190,7 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
         questions,
         googleSheetUrl: googleSheetUrl || undefined,
         allowEditResponse,
+        isPublic,
       });
     } finally {
       setSaving(false);
@@ -303,7 +308,7 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
           </div>
 
           {/* <div className="flex items-center justify-between rounded-lg border p-4">
-            
+
             <div className="space-y-0.5">
               <Label htmlFor="allowEdit">Allow Response Editing</Label>
               <p className="text-xs text-muted-foreground">
@@ -314,9 +319,23 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
               id="allowEdit"
               checked={allowEditResponse}
               onCheckedChange={setAllowEditResponse}
-            /> 
-           
+            />
+
           </div> */}
+
+          <div className="flex items-center justify-between rounded-lg border p-4">
+            <div className="space-y-0.5">
+              <Label htmlFor="isPublic">Public Form</Label>
+              <p className="text-xs text-muted-foreground">
+                Allow anonymous users to submit this form (User ID will not be tracked)
+              </p>
+            </div>
+            <Switch
+              id="isPublic"
+              checked={isPublic}
+              onCheckedChange={setIsPublic}
+            />
+          </div>
         </CardContent>
       </Card>
 

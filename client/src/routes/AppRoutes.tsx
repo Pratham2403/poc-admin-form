@@ -48,22 +48,26 @@ export const AppRoutes = () => {
                 </Route>
             </Route>
 
-            {/* USER PORTAL */}
-            <Route element={<AuthGuard roles={[UserRole.USER]} />}>
-                <Route element={<UserLayout />}>
-                    <Route path="/forms" element={<FormsList />} />
-                    <Route path="/forms/:id" element={<FillForm />} />
+            {/* USER PORTAL & PUBLIC ACCESS */}
+            {/* We use UserLayout for both authenticated and anonymous users */}
+            <Route element={<UserLayout />}>
+                {/* Publicly Accessible Routes */}
+                <Route path="/forms" element={<FormsList />} />
+                <Route path="/forms/:id" element={<FillForm />} />
+
+                {/* Protected User Routes */}
+                <Route element={<AuthGuard roles={[UserRole.USER]} />}>
                     <Route path="/my-responses" element={<MyResponses />} />
                     <Route path="/my-responses/:id/edit" element={<EditResponse />} />
                     <Route path="/my-responses/:id/view" element={<EditResponse />} />
-
-                    {/* Default User Redirect */}
-                    <Route path="/" element={<Navigate to="/forms" replace />} />
                 </Route>
+
+                {/* Default Redirects */}
+                <Route path="/" element={<Navigate to="/forms" replace />} />
             </Route>
 
             {/* CATCH ALL */}
-            <Route path="*" element={<Navigate to="/login" replace />} />
+            <Route path="*" element={<Navigate to="/forms" replace />} />
         </Routes>
     );
 };

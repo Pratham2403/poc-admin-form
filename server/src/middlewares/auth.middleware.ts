@@ -21,6 +21,25 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
     }
 };
 
+export const optionalAuthenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
+    const token = req.cookies.access_token;
+
+    if (!token) {
+        req.user = undefined;
+        return next();
+    }
+
+    try {
+        const decoded = verifyAccessToken(token);
+        req.user = decoded;
+        next();
+    } catch (error) {
+        // If token is invalid, treat as guest
+        req.user = undefined;
+        next();
+    }
+};
+
 export const authorize = (roles: string[]) => {
     return (req: AuthRequest, res: Response, next: NextFunction) => {
         if (!req.user || !roles.includes(req.user.role)) {

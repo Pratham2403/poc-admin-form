@@ -9,6 +9,7 @@ export interface IForm {
     status: FormStatus;
     googleSheetUrl?: string;
     allowEditResponse: boolean;
+    isPublic: boolean;
     createdBy: string; // User ID
     createdAt?: Date;
     updatedAt?: Date;

@@ -7,13 +7,14 @@ import { type IForm } from '@poc-admin-form/shared';
 import { useToast } from '../../components/ui/Toast';
 import { PageLoader } from '../../components/ui/Spinner';
 import { Card, CardContent } from '../../components/ui/Card';
-
+import { useAuth } from '../../contexts/AuthContext';
 import { usePortalPath } from '../../hooks/usePortalPath';
 
 export const FillForm = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { addToast } = useToast();
+    const { user } = useAuth(); // Get user from context
     const [form, setForm] = useState<IForm | null>(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -44,7 +45,13 @@ export const FillForm = () => {
         try {
             await submitResponse({ formId: id, answers });
             addToast('Response submitted successfully!', 'success');
-            navigate(getPath('/my-responses'));
+
+            // Redirect based on auth status
+            if (user) {
+                navigate(getPath('/my-responses'));
+            } else {
+                navigate(getPath('/forms'));
+            }
         } catch (error: any) {
             addToast(error.response?.data?.message || 'Failed to submit response', 'error');
         } finally {
