@@ -47,6 +47,7 @@ server/dist
 server/build
 server/.env* # Include server-specific .env files
 server/src/config/*
+server/logs/
 
 # Shared-specific (likely just source, but for completeness)
 shared/node_modules
