@@ -1,6 +1,6 @@
 // This function runs in MongoDB Atlas Triggers
 // It is triggered on Insert of a FormResponse document.
-import { IFormDocument } from '../models/Form.model.js';
+import { IFormDocument } from '../models/Form.model.ts';
 declare var context: any;
 
 export const responseToSheets = async (changeEvent: any) => {

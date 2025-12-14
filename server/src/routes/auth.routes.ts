@@ -1,7 +1,7 @@
 import express from 'express';
-import { register, login, logout, refresh, getCSRFToken } from '../controllers/auth.controller.js';
-import { authenticate, authorize } from "../middlewares/auth.middleware.js"
-import { authRateLimiter } from '../middlewares/ratelimit.middleware.js';
+import { register, login, logout, refresh, getCSRFToken } from '../controllers/auth.controller.ts';
+import { authenticate, authorize } from "../middlewares/auth.middleware.ts"
+import { authRateLimiter } from '../middlewares/ratelimit.middleware.ts';
 import { UserRole } from '@poc-admin-form/shared';
 
 const router = express.Router();

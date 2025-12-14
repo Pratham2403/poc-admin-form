@@ -1,9 +1,9 @@
 import express from 'express';
-import { createForm, getForms, getFormById, updateForm, deleteForm } from '../controllers/form.controller.js';
-import { authenticate, authorize } from '../middlewares/auth.middleware.js';
+import { createForm, getForms, getFormById, updateForm, deleteForm } from '../controllers/form.controller.ts';
+import { authenticate, authorize } from '../middlewares/auth.middleware.ts';
 import { UserRole } from '@poc-admin-form/shared';
 
-import { validateSheetAccess } from '../middlewares/sheetValidation.middleware.js';
+import { validateSheetAccess } from '../middlewares/sheetValidation.middleware.ts';
 
 const router = express.Router();
 

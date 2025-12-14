@@ -1,7 +1,7 @@
 import express from 'express';
-import authRoutes from './auth.routes.js';
-import formRoutes from './form.routes.js';
-import responseRoutes from './response.routes.js';
+import authRoutes from './auth.routes.ts';
+import formRoutes from './form.routes.ts';
+import responseRoutes from './response.routes.ts';
 
 
 const router = express.Router();

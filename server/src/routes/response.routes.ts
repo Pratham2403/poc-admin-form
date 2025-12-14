@@ -1,6 +1,6 @@
 import express from 'express';
-import { submitResponse, getMyResponses, updateResponse, getResponseById } from '../controllers/response.controller.js';
-import { authenticate, authorize } from '../middlewares/auth.middleware.js';
+import { submitResponse, getMyResponses, updateResponse, getResponseById } from '../controllers/response.controller.ts';
+import { authenticate, authorize } from '../middlewares/auth.middleware.ts';
 import { UserRole } from '@poc-admin-form/shared';
 
 const router = express.Router();
