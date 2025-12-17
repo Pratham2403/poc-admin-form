@@ -11,7 +11,7 @@ export const validateSheetAccess = async (
     const { googleSheetUrl } = req.body;
 
     if (!googleSheetUrl) {
-      return next();
+      return next(AppError.badRequest("Google Sheets URL is required"));
     }
 
     await validateAndInitializeSheet(googleSheetUrl);

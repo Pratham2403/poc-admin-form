@@ -167,13 +167,6 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
       newErrors.googleSheetUrl = "Invalid Google Sheets URL";
     }
 
-    if (
-      googleSheetUrl &&
-      !googleSheetUrl.includes("docs.google.com/spreadsheets")
-    ) {
-      newErrors.googleSheetUrl = "Invalid Google Sheets URL";
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -289,6 +282,7 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                 id="googleSheetUrl"
                 value={googleSheetUrl}
                 onChange={(e) => setGoogleSheetUrl(e.target.value)}
+                required
                 placeholder="https://docs.google.com/spreadsheets/d/..."
                 className={errors.googleSheetUrl ? "border-destructive" : ""}
               />
