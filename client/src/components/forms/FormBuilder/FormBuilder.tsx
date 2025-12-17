@@ -139,6 +139,10 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
       newErrors.title = "Form title is required";
     }
 
+    if (!googleSheetUrl.trim()) {
+      newErrors.googleSheetUrl = "Google Sheets URL is required";
+    }
+
     if (questions.length === 0) {
       newErrors.questions = "At least one question is required";
     }
@@ -290,6 +294,7 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                 onChange={(e) => setGoogleSheetUrl(e.target.value)}
                 placeholder="https://docs.google.com/spreadsheets/d/..."
                 className={errors.googleSheetUrl ? "border-destructive" : ""}
+                required={true}
               />
             </div>
 
