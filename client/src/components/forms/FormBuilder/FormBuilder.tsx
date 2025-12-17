@@ -20,7 +20,6 @@ import {
 import { Spinner } from "../../ui/Spinner";
 import { QuestionItem } from "./QuestionItem";
 
-
 interface FormBuilderProps {
   onSave: (form: Partial<IForm>) => Promise<void>;
   initialData?: Partial<IForm>;
@@ -43,13 +42,9 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
   const [allowEditResponse, setAllowEditResponse] = useState(
     initialData?.allowEditResponse || false
   );
-  const [isPublic, setIsPublic] = useState(
-    initialData?.isPublic || false
-  );
+  const [isPublic, setIsPublic] = useState(initialData?.isPublic || false);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-
 
   // Update state if initialData changes (e.g. when loading an existing form for editing)
   useEffect(() => {
@@ -286,7 +281,9 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="googleSheetUrl">Google Sheet URL</Label>
+            <Label htmlFor="googleSheetUrl" required>
+              Google Sheet URL
+            </Label>
             <div className="flex gap-2">
               <Input
                 id="googleSheetUrl"
@@ -294,7 +291,6 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                 onChange={(e) => setGoogleSheetUrl(e.target.value)}
                 placeholder="https://docs.google.com/spreadsheets/d/..."
                 className={errors.googleSheetUrl ? "border-destructive" : ""}
-                required={true}
               />
             </div>
 
@@ -307,7 +303,9 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
             <p className="text-xs text-muted-foreground">
               Responses will be synced to this Google Sheet.
               <span className="font-medium text-foreground block mt-1">
-                Note: The sheet must allow edit access to the service account. The system will automatically ensure columns for 'ID', 'NAME', 'EMAIL' and all Questions exist.
+                Note: The sheet must allow edit access to the service account.
+                The system will automatically ensure columns for 'ID', 'NAME',
+                'EMAIL' and all Questions exist.
               </span>
             </p>
           </div>
@@ -332,7 +330,8 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
             <div className="space-y-0.5">
               <Label htmlFor="isPublic">Public Form</Label>
               <p className="text-xs text-muted-foreground">
-                Allow anonymous users to submit this form (User ID will not be tracked)
+                Allow anonymous users to submit this form (User ID will not be
+                tracked)
               </p>
             </div>
             <Switch
