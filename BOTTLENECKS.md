@@ -1,0 +1,3 @@
+1. auth.controller.ts (refresh/logout): refresh tokens are long-lived, never rotated, and not invalidated server-side—stealing a refresh cookie grants access until expiry. Introduce rotation with a stored token family, revoke on logout, and verify against storage on refresh.
+2. Introduce input validation/sanitization (celebrate/zod) for auth/form/response payloads and sanitize sheet writes.
+3. Frontend axios CSRF flow: CSRF token stored in a JS-readable cookie (by design) but increases XSS blast radius; pair with CSP/React escaping and prefer HttpOnly double-submit alternatives if feasible
