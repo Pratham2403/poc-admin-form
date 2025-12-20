@@ -1,13 +1,12 @@
 import { google } from "googleapis";
 import logger from "../lib/logger/index.ts";
+import { AppError } from "../errors/AppError.ts";
 
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
 const SERVICE_ACCOUNT_FILE = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
 
 if (!SERVICE_ACCOUNT_FILE) {
-  throw new Error(
-    "Missing required environment variable: GOOGLE_SERVICE_ACCOUNT_JSON"
-  );
+  throw AppError.internal("Missing required environment variable: GOOGLE_SERVICE_ACCOUNT_JSON");
 }
 
 let credentials;
@@ -17,9 +16,7 @@ try {
   logger.error("Failed to parse GOOGLE_SERVICE_ACCOUNT_JSON", {
     stack: (error as Error).stack,
   });
-  throw new Error(
-    "Invalid GOOGLE_SERVICE_ACCOUNT_JSON environment variable: Invalid JSON"
-  );
+  throw AppError.internal("Invalid GOOGLE_SERVICE_ACCOUNT_JSON environment variable: Invalid JSON");
 }
 
 const auth = new google.auth.GoogleAuth({
@@ -80,9 +77,7 @@ export const validateAndInitializeSheet = async (
       logger.warn(
         `Sheet validation: Permission denied for ${spreadsheetIdOrUrl}`
       );
-      throw new Error(
-        "Service account does not have access to this sheet. Please share it with the service account email."
-      );
+      throw AppError.forbidden("Service account does not have access to this sheet. Please share it with the service account email.");
     }
 
     if (
@@ -90,7 +85,7 @@ export const validateAndInitializeSheet = async (
       (error.response && error.response.status === 404)
     ) {
       logger.warn(`Sheet validation: Not found ${spreadsheetIdOrUrl}`);
-      throw new Error("Spreadsheet not found. Please check the URL.");
+      throw AppError.notFound("Spreadsheet not found. Please check the URL.");
     }
 
     logger.error("Sheet validation unexpected error", {
@@ -197,6 +192,6 @@ export const syncResponseToSheet = async (
         return parseInt(match[1], 10);
       }
     }
-    throw new Error("Could not determine row number after append");
+    throw AppError.internal("Could not determine row number after append");
   }
 };

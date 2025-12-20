@@ -1,23 +1,42 @@
-import api from '../api/axios.config';
+import api from "../api/axios.config";
 
 export const submitResponse = async (data: any) => {
-    const response = await api.post('/responses', data);
-    return response.data;
+  const response = await api.post("/responses", data);
+  return response.data;
 };
 
-export const getMyResponses = async (page = 1, limit = 10, search = '') => {
-    const response = await api.get(`/responses/my`, {
-        params: { page, limit, search }
-    });
-    return response.data;
+export const getMyResponses = async (page = 1, limit = 10, search = "") => {
+  const response = await api.get(`/responses/my`, {
+    params: { page, limit, search },
+  });
+  return response.data;
 };
 
 export const updateResponse = async (id: string, answers: any) => {
-    const response = await api.put(`/responses/${id}`, { answers });
-    return response.data;
+  const response = await api.put(`/responses/${id}`, { answers });
+  return response.data;
 };
 
 export const getResponseById = async (id: string) => {
-    const response = await api.get(`/responses/${id}`);
-    return response.data;
+  const response = await api.get(`/responses/${id}`);
+  return response.data;
+};
+
+export const getMySubmissionCount = async (
+  timeFilter?: "today" | "month" | "all"
+) => {
+  const response = await api.get("/responses/my/count", {
+    params: { timeFilter: timeFilter || "all" },
+  });
+  return response.data;
+};
+
+/**
+ * Get paginated responses for a specific form by current user
+ */
+export const getFormResponses = async (formId: string, page = 1, limit = 3) => {
+  const response = await api.get(`/responses/form/${formId}`, {
+    params: { page, limit },
+  });
+  return response.data;
 };

@@ -8,56 +8,69 @@ import {
 } from "../utils/jwt.utils.ts";
 import { asyncHandler } from "../utils/asyncHandler.ts";
 import { AppError } from "../errors/AppError.ts";
+import { AuthRequest } from "../middlewares/auth.middleware.ts";
+import { UserRole } from "@poc-admin-form/shared";
 
 /**
  * Register a new user
+ * Only super admin can set modulePermissions
  */
-export const register = asyncHandler(async (req: Request, res: Response) => {
-  const { email, password, name, role } = req.body;
+export const register = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { 
+    email, 
+    password, 
+    name, 
+    role, 
+    address, 
+    city, 
+    employeeId, 
+    vendorId, 
+    modulePermissions 
+  } = req.body;
+  
   const userExists = await User.findOne({ email });
 
   if (userExists) {
     throw AppError.badRequest("User already exists");
   }
 
+  // Use provided password or default to "password123"
+  const userPassword = password || "password123";
   const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
+  const hashedPassword = await bcrypt.hash(userPassword, salt);
+
+  // Only super admin can set modulePermissions
+  const currentUser = req.user;
+  let finalModulePermissions = undefined;
+  
+  if (modulePermissions) {
+    if (currentUser?.role !== UserRole.SUPERADMIN) {
+      throw AppError.forbidden("Only super admin can set module permissions");
+    }
+    
+    // Validate module permissions structure
+    if (
+      typeof modulePermissions !== 'object' ||
+      typeof modulePermissions.users !== 'boolean' ||
+      typeof modulePermissions.forms !== 'boolean'
+    ) {
+      throw AppError.badRequest("Invalid module permissions structure. Must be { users: boolean, forms: boolean }");
+    }
+    
+    finalModulePermissions = modulePermissions;
+  }
 
   await User.create({
     email,
     password: hashedPassword,
     name,
-    role,
+    role: role || UserRole.USER,
+    address,
+    city,
+    employeeId,
+    vendorId,
+    modulePermissions: finalModulePermissions,
   });
-
-  // if (user) {
-  //     // Generate tokens and set cookies just like login
-  //     const accessToken = generateAccessToken(user._id.toString(), user.role);
-  //     const refreshToken = generateRefreshToken(user._id.toString());
-
-  //     res.cookie('access_token', accessToken, {
-  //         httpOnly: true,
-  //         secure: process.env.NODE_ENV === 'production',
-  //         sameSite: 'strict',
-  //         maxAge: 15 * 60 * 1000 // 15 minutes
-  //     });
-
-  //     res.cookie('refresh_token', refreshToken, {
-  //         httpOnly: true,
-  //         secure: process.env.NODE_ENV === 'production',
-  //         sameSite: 'strict',
-  //         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-  //     });
-
-  //     res.status(201).json({
-  //         _id: user._id,
-  //         email: user.email,
-  //         name: user.name,
-  //         role: user.role
-  //     });
-  // } else {
-  //     res.status(400).json({ message: 'Invalid user data' });
-  // }
 
   res.status(201).json({
     message: `User ${name} created successfully`,
@@ -78,7 +91,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     user.password &&
     (await bcrypt.compare(password, user.password))
   ) {
-    const accessToken = generateAccessToken(user._id.toString(), user.role);
+    const accessToken = generateAccessToken(user._id.toString(), user.role, user.modulePermissions);
     const refreshToken = generateRefreshToken(user._id.toString());
 
     res.cookie("access_token", accessToken, {
@@ -100,6 +113,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
       email: user.email,
       name: user.name,
       role: user.role,
+      modulePermissions: user.modulePermissions,
     });
   } else {
     throw AppError.unauthorized("Invalid email or password");
@@ -144,7 +158,7 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
     throw AppError.unauthorized("User not found");
   }
 
-  const accessToken = generateAccessToken(user._id.toString(), user.role);
+  const accessToken = generateAccessToken(user._id.toString(), user.role, user.modulePermissions);
   const newRefreshToken = generateRefreshToken(user._id.toString());
 
   res.cookie("access_token", accessToken, {
@@ -170,6 +184,7 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
       email: user.email,
       name: user.name,
       role: user.role,
+      modulePermissions: user.modulePermissions,
     },
   });
 });

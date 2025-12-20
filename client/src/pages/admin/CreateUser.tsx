@@ -14,21 +14,45 @@ import {
 } from "../../components/ui/Card";
 import { Spinner } from "../../components/ui/Spinner";
 import { UserRole } from "@poc-admin-form/shared";
-import { register } from "../../services/auth.service";
+import { createUser } from "../../services/user.service";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   UserPlus,
   Mail,
   User,
   Shield,
   Key,
-  CheckCircle2
+  CheckCircle2,
+  Hash,
+  Info,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
+
+interface CreateUserData {
+  name: string;
+  email: string;
+  role?: UserRole;
+  employeeId?: string;
+  vendorId?: string;
+  modulePermissions?: { users: boolean; forms: boolean };
+  password?: string;
+}
+
 export const CreateUser = () => {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === UserRole.SUPERADMIN;
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<UserRole>(UserRole.USER);
-  const password = "password123";
+  const [employeeId, setEmployeeId] = useState("");
+  const [vendorId, setVendorId] = useState("");
+  const [password, setPassword] = useState("");
+  const [useDefaultPassword, setUseDefaultPassword] = useState(true);
+  const [showPassword, setShowPassword] = useState(true);
+  const [selectedModule, setSelectedModule] = useState<string>("forms");
 
   const [loading, setLoading] = useState(false);
   const { addToast } = useToast();
@@ -37,23 +61,56 @@ export const CreateUser = () => {
     e.preventDefault();
 
     if (!name || !email) {
-      addToast("Please fill in all fields", "warning");
+      addToast("Please fill in all required fields", "warning");
       return;
     }
 
     setLoading(true);
     try {
-      await register({ name, email, password, role });
 
-      addToast(
-        `User ${name} created successfully`,
-        "success"
-      );
+      const userData: CreateUserData = {
+        name,
+        email,
+        role: isSuperAdmin ? role : UserRole.USER,
+      };
+
+      // Only super admin can set these fields
+      if (isSuperAdmin) {
+        if (employeeId) userData.employeeId = employeeId;
+        if (vendorId) userData.vendorId = vendorId;
+        // Set module permissions if role is ADMIN and module is selected
+        if (role === UserRole.ADMIN && selectedModule) {
+          userData.modulePermissions = {
+            users: selectedModule === "users",
+            forms: selectedModule === "forms",
+          };
+        }
+      }
+
+      // Password handling
+      if (!useDefaultPassword && password) {
+        userData.password = password;
+      }
+
+      await createUser(userData);
+
+      addToast(`User ${name} created successfully`, "success");
+
+      // Reset form
       setName("");
       setEmail("");
       setRole(UserRole.USER);
-    } catch (err: any) {
-      addToast(err.response?.data?.message || "Failed to create user", "error");
+      setEmployeeId("");
+      setVendorId("");
+      setPassword("");
+      setUseDefaultPassword(true);
+      setSelectedModule("");
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      addToast(
+        error.response?.data?.message || "Failed to create user",
+        "error"
+      );
     } finally {
       setLoading(false);
     }
@@ -81,12 +138,23 @@ export const CreateUser = () => {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-6 pt-6">
-
-            <div className="grid grid-cols-1 md:grid-cols-[4fr_1fr] gap-6">
-              <div className="space-y-2">
+            <div
+              className={`grid grid-cols-1 gap-6 ${
+                isSuperAdmin ? "md:grid-cols-5" : ""
+              }`}
+            >
+              <div
+                className={`space-y-2 ${
+                  isSuperAdmin
+                    ? role === UserRole.ADMIN
+                      ? "md:col-span-3"
+                      : "md:col-span-4"
+                    : ""
+                }`}
+              >
                 <Label htmlFor="name" className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />
-                  Full Name
+                  Full Name *
                 </Label>
                 <Input
                   id="name"
@@ -95,31 +163,87 @@ export const CreateUser = () => {
                   placeholder="e.g. John Doe"
                   className="bg-background/50"
                   disabled={loading}
+                  required
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="role" className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-muted-foreground" />
-                  Role
-                </Label>
-                <Select
-                  id="role"
-                  value={role}
-                  onChange={(e) => setRole(e.target.value as UserRole)}
-                  disabled={loading}
-                  className="bg-background/50"
-                >
-                  <option value={UserRole.USER}>User</option>
-                  <option value={UserRole.ADMIN}>Admin</option>
-                </Select>
-              </div>
+              {isSuperAdmin && (
+                <>
+                  <div className="space-y-2 md:col-span-1">
+                    <Label htmlFor="role" className="flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-muted-foreground" />
+                      Role
+                    </Label>
+                    <Select
+                      id="role"
+                      value={role}
+                      onChange={(e) => {
+                        setRole(e.target.value as UserRole);
+                        if (e.target.value !== UserRole.ADMIN) {
+                          setSelectedModule("");
+                        }
+                      }}
+                      disabled={loading}
+                      className="bg-background/50"
+                    >
+                      <option value={UserRole.USER}>User</option>
+                      <option value={UserRole.ADMIN}>Admin</option>
+                    </Select>
+                  </div>
+                  {role === UserRole.ADMIN && (
+                    <div className="space-y-2 md:col-span-1">
+                      <Label
+                        htmlFor="module"
+                        className="flex items-center gap-2"
+                      >
+                        <Shield className="h-4 w-4 text-muted-foreground" />
+                        Module
+                        <div className="group relative">
+                          <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                          <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-10 w-48 p-2 bg-popover border rounded-md shadow-lg text-xs">
+                            <p className="font-semibold mb-1">Users Module:</p>
+                            <p className="text-muted-foreground">
+                              Access to user management features
+                            </p>
+                            <p className="font-semibold mb-1 mt-2">
+                              Forms Module:
+                            </p>
+                            <p className="text-muted-foreground">
+                              Access to form creation and management
+                            </p>
+                          </div>
+                        </div>
+                      </Label>
+                      <Select
+                        id="module"
+                        value={selectedModule}
+                        onChange={(e) => setSelectedModule(e.target.value)}
+                        disabled={loading}
+                        className="bg-background/50"
+                      >
+                        <option
+                          value="forms"
+                          title="Access to form creation and management"
+                        >
+                          Forms
+                        </option>
+                        <option
+                          value="users"
+                          title="Access to user management features"
+                        >
+                          Users
+                        </option>
+                      </Select>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="email" className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-muted-foreground" />
-                Email Address
+                Email Address *
               </Label>
               <Input
                 id="email"
@@ -129,20 +253,97 @@ export const CreateUser = () => {
                 placeholder="e.g. john@example.com"
                 className="bg-background/50"
                 disabled={loading}
+                required
               />
             </div>
 
-            <div className="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 p-3 rounded-md flex items-center gap-3">
-              <Key className="h-4 w-4 text-blue-500 shrink-0" />
-              <div className="text-sm flex-1 flex flex-wrap items-center gap-x-2">
-                <span className="text-blue-700 dark:text-blue-300">Default Password:</span>
-                <code className="bg-background/80 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-800 text-foreground font-mono font-bold text-xs">
-                  {password}
-                </code>
-                <span className="text-xs text-muted-foreground">(User cannot change this initially)</span>
-              </div>
-            </div>
+            {isSuperAdmin && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="employeeId"
+                    className="flex items-center gap-2"
+                  >
+                    <Hash className="h-4 w-4 text-muted-foreground" />
+                    Employee ID
+                  </Label>
+                  <Input
+                    id="employeeId"
+                    value={employeeId}
+                    onChange={(e) => setEmployeeId(e.target.value)}
+                    placeholder="e.g. EMP001"
+                    className="bg-background/50"
+                    disabled={loading}
+                  />
+                </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="vendorId" className="flex items-center gap-2">
+                    <Hash className="h-4 w-4 text-muted-foreground" />
+                    Vendor ID
+                  </Label>
+                  <Input
+                    id="vendorId"
+                    value={vendorId}
+                    onChange={(e) => setVendorId(e.target.value)}
+                    placeholder="e.g. VEND001"
+                    className="bg-background/50"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="useDefaultPassword"
+                  checked={useDefaultPassword}
+                  onChange={(e) => setUseDefaultPassword(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300"
+                  disabled={loading}
+                />
+                <Label
+                  htmlFor="useDefaultPassword"
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <Key className="h-4 w-4 text-muted-foreground" />
+                  Use default password (password123)
+                </Label>
+              </div>
+
+              {!useDefaultPassword && (
+                <div className="space-y-2">
+                  <Label htmlFor="password">Custom Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter custom password"
+                      className="bg-background/50 pr-10"
+                      disabled={loading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-foreground"
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </CardContent>
           <CardFooter className="flex justify-between border-t border-border/40 bg-muted/20 py-4 gap-3">
             <Button
@@ -151,13 +352,22 @@ export const CreateUser = () => {
               onClick={() => {
                 setName("");
                 setEmail("");
-                setRole(UserRole.USER)
+                setRole(UserRole.USER);
+                setEmployeeId("");
+                setVendorId("");
+                setPassword("");
+                setUseDefaultPassword(true);
+                setSelectedModule("");
               }}
               disabled={loading}
             >
               Reset
             </Button>
-            <Button type="submit" disabled={loading} className="min-w-[140px] shadow-lg hover:shadow-xl transition-all">
+            <Button
+              type="submit"
+              disabled={loading}
+              className="min-w-[140px] shadow-lg hover:shadow-xl transition-all"
+            >
               {loading ? (
                 <>
                   <Spinner size="sm" className="mr-2" />

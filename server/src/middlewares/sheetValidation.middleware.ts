@@ -1,27 +1,18 @@
 import { Request, Response, NextFunction } from "express";
 import { validateAndInitializeSheet } from "../services/googleSheets.service.ts";
 import { AppError } from "../errors/AppError.ts";
+import { asyncHandler } from "../utils/asyncHandler.ts";
 
-export const validateSheetAccess = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
+export const validateSheetAccess = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
     const { googleSheetUrl } = req.body;
-
-    if (!googleSheetUrl) {
-      return next();
+    // Skip validation for status-only updates or other field updates
+    if (googleSheetUrl !== undefined) {
+      if (!googleSheetUrl) {
+        return next(AppError.badRequest("Google Sheet URL is required"));
+      }
+      await validateAndInitializeSheet(googleSheetUrl);
     }
-
-    await validateAndInitializeSheet(googleSheetUrl);
     next();
-  } catch (error: any) {
-    // Pass to error middleware for consistent handling
-    next(
-      AppError.badRequest(
-        error.message || "Failed to validate Google Sheet access"
-      )
-    );
   }
-};
+);

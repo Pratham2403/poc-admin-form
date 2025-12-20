@@ -42,9 +42,17 @@ export const FillForm = () => {
 
         setSubmitting(true);
         try {
-            await submitResponse({ formId: id, answers });
+            const response = await submitResponse({ formId: id, answers });
             addToast('Response submitted successfully!', 'success');
+            
+            // Check if form has a redirection link
+            if (response.redirectionLink) {
+                // Redirect to the provided link
+                window.location.href = response.redirectionLink;
+            } else {
+                // Default behavior: navigate to my-responses
             navigate(getPath('/my-responses'));
+            }
         } catch (error: any) {
             addToast(error.response?.data?.message || 'Failed to submit response', 'error');
         } finally {

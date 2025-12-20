@@ -28,8 +28,9 @@ const FormSchema: Schema = new Schema({
     description: { type: String },
     questions: [QuestionSchema],
     status: { type: String, enum: Object.values(FormStatus), default: FormStatus.DRAFT },
-    googleSheetUrl: { type: String },
+    googleSheetUrl: { required: true, type: String },
     allowEditResponse: { type: Boolean, default: false },
+    redirectionLink: { type: String },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     responseCount: { type: Number, default: 0 }
 }, { timestamps: true });

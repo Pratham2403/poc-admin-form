@@ -100,7 +100,13 @@ export const submitResponse = asyncHandler(
 
     await Form.findByIdAndUpdate(formId, { $inc: { responseCount: 1 } });
 
-    res.status(201).json(response);
+    // Return response with redirectionLink if form has one
+    const responseData = {
+      ...response.toObject(),
+      redirectionLink: form.redirectionLink,
+    };
+
+    res.status(201).json(responseData);
   }
 );
 
@@ -198,11 +204,12 @@ export const updateResponse = asyncHandler(
 //     }
 // };
 
-
 /**
- * Get all responses for the current user
+ * Get all form groups for the current user (without responses array)
+ * Returns form metadata and response count for each form the user has responded to
  */
-export const getMyResponses = asyncHandler(async (req: AuthRequest, res: Response) => {
+export const getMyResponses = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
     const userId = req.user.userId;
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
@@ -235,12 +242,11 @@ export const getMyResponses = asyncHandler(async (req: AuthRequest, res: Respons
           ]
         : []),
 
-      // 4. Group by Form
+      // 4. Group by Form (no responses array - fetched separately via getFormResponses)
       {
         $group: {
           _id: "$form._id",
           form: { $first: "$form" },
-          responses: { $push: "$$ROOT" },
           latestActivity: { $max: "$updatedAt" },
           responseCount: { $sum: 1 },
         },
@@ -249,7 +255,7 @@ export const getMyResponses = asyncHandler(async (req: AuthRequest, res: Respons
       // 5. Sort Groups by latest activity
       { $sort: { latestActivity: -1 } },
 
-      // 6. Project clean structure (remove form from inside responses to avoid duplication if needed, but keeping simple for now)
+      // 6. Project clean structure
       {
         $project: {
           _id: 1,
@@ -258,12 +264,6 @@ export const getMyResponses = asyncHandler(async (req: AuthRequest, res: Respons
             title: 1,
             status: 1,
             allowEditResponse: 1,
-          },
-          responses: {
-            _id: 1,
-            answers: 1,
-            createdAt: 1,
-            updatedAt: 1,
           },
           latestActivity: 1,
           responseCount: 1,
@@ -293,12 +293,58 @@ export const getMyResponses = asyncHandler(async (req: AuthRequest, res: Respons
         pages: Math.ceil(total / limit),
       },
     });
-});
+  }
+);
+
+/**
+ * Get paginated responses for a specific form by the current user
+ */
+export const getFormResponses = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    const { formId } = req.params;
+    const userId = new mongoose.Types.ObjectId(req.user!.userId);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 3;
+    const skip = (page - 1) * limit;
+
+    // Validate formId
+    if (!mongoose.Types.ObjectId.isValid(formId)) {
+      throw AppError.badRequest("Invalid form ID");
+    }
+
+    const formObjectId = new mongoose.Types.ObjectId(formId);
+
+    // Build query filter - using 'as any' to handle ObjectId type mismatch with interface
+    const queryFilter = { formId: formObjectId, userId } as any;
+
+    // Get paginated responses and total count in parallel
+    const [responses, total] = await Promise.all([
+      FormResponse.find(queryFilter)
+        .select("_id answers createdAt updatedAt")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      FormResponse.countDocuments(queryFilter),
+    ]);
+
+    res.json({
+      data: responses,
+      pagination: {
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit),
+      },
+    });
+  }
+);
 
 /**
  * Get a response by id
  */
-export const getResponseById = asyncHandler(async (req: AuthRequest, res: Response) => {
+export const getResponseById = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const userId = req.user.userId;
 
@@ -312,4 +358,35 @@ export const getResponseById = asyncHandler(async (req: AuthRequest, res: Respon
     }
 
     res.json(response);
-});
+  }
+);
+
+/**
+ * Get current user's form submission count with time filter
+ */
+export const getMySubmissionCount = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    const userId = new mongoose.Types.ObjectId(req.user.userId);
+    const timeFilter = (req.query.timeFilter as string) || "all"; // today, month, all
+
+    let dateFilter: any = {};
+
+    if (timeFilter === "today") {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      dateFilter = { submittedAt: { $gte: startOfDay } };
+    } else if (timeFilter === "month") {
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      dateFilter = { submittedAt: { $gte: startOfMonth } };
+    }
+
+    const count = await FormResponse.countDocuments({
+      userId: userId,
+      ...dateFilter,
+    });
+
+    res.json({ count, timeFilter });
+  }
+);

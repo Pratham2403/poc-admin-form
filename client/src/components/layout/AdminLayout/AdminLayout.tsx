@@ -23,7 +23,12 @@ export const AdminLayout = () => {
         }
     };
 
-    const isActive = (path: string) => location.pathname.startsWith(path);
+    const isActive = (path: string) => {
+        if (path === '/admin/users/create') {
+            return location.pathname === path;
+        }
+        return location.pathname.startsWith(path) && location.pathname !== '/admin/users/create';
+    };
 
     const NavLink = ({ to, children }: { to: string; children: React.ReactNode }) => (
         <Link
@@ -63,10 +68,17 @@ export const AdminLayout = () => {
                         Management
                     </div>
                     <NavLink to="/admin/forms">Forms</NavLink>
+                    {(user?.role === UserRole.SUPERADMIN || user?.modulePermissions?.forms) && (
+                        <NavLink to="/admin/create">Create Form</NavLink>
+                    )}
                     <NavLink to="/admin/my-responses">My Responses</NavLink>
-                    {user?.role === UserRole.SUPERADMIN && (
+                    {(user?.role === UserRole.SUPERADMIN || user?.modulePermissions?.users) && (
+                        <NavLink to="/admin/users">User Management</NavLink>
+                    )}
+                    {(user?.role === UserRole.SUPERADMIN || user?.modulePermissions?.users) && (
                         <NavLink to="/admin/users/create">Create User</NavLink>
                     )}
+                    <NavLink to="/admin/system-settings">System Settings</NavLink>
                 </nav>
             </div>
 

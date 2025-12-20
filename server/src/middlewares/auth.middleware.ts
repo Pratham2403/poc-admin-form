@@ -1,9 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyAccessToken } from "../utils/jwt.utils.ts";
 import { AppError } from "../errors/AppError.ts";
+import { UserRole } from "@poc-admin-form/shared";
 
 export interface AuthRequest extends Request {
-  user?: any;
+  user?: {
+    userId: string;
+    role: UserRole;
+    modulePermissions?: { users: boolean; forms: boolean };
+  };
 }
 
 export const authenticate = (
@@ -19,7 +24,7 @@ export const authenticate = (
 
   try {
     const decoded = verifyAccessToken(token);
-    req.user = decoded;
+    req.user = decoded as AuthRequest["user"];
     next();
   } catch (error) {
     next(AppError.unauthorized("Not authorized, token failed"));
@@ -34,5 +39,30 @@ export const authorize = (roles: string[]) => {
       );
     }
     next();
+  };
+};
+
+/**
+ * Module authorization middleware
+ * SUPERADMIN bypasses all checks, ADMIN requires specific module permission
+ */
+export const authorizeModule = (module: "users" | "forms") => {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return next(AppError.unauthorized("Not authorized, no user"));
+    }
+
+    if (req.user.role === UserRole.SUPERADMIN) {
+      return next();
+    }
+    if (req.user.role === UserRole.ADMIN) {
+      const permissions = req.user.modulePermissions;
+      if (permissions?.[module] === true) {
+        return next();
+      }
+      return next(AppError.forbidden(`No access to ${module} module`));
+    }
+
+    return next(AppError.forbidden("Admin access required"));
   };
 };

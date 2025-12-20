@@ -1,51 +1,121 @@
 import { Response } from "express";
+import mongoose from "mongoose";
 import Form from "../models/Form.model.ts";
 import { AuthRequest } from "../middlewares/auth.middleware.ts";
 import { FormStatus } from "@poc-admin-form/shared";
 import { asyncHandler } from "../utils/asyncHandler.ts";
 import { AppError } from "../errors/AppError.ts";
-
+import { buildDateFilter } from "../utils/helper.utils.ts";
 /**
  * Create a new form
  */
-export const createForm = asyncHandler(async (req: AuthRequest, res: Response) => {
+export const createForm = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
     const form = await Form.create({
       ...req.body,
       createdBy: req.user.userId,
     });
     res.status(201).json(form);
-});
+  }
+);
 
 /**
- * Get all forms
+ * Get all forms with pagination, search, and user response status
+ * Uses aggregation to check if current user has responded to each form
  */
-export const getForms = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const userId = req.user.userId;
+export const getForms = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    // const userId = req.user.userId;
+    const userId = new mongoose.Types.ObjectId(req.user.userId);
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 9; // Default to 9 for grid view (3x3)
+    const search = (req.query.search as string) || "";
     const skip = (page - 1) * limit;
 
-    // Form creators can see all their forms (except deleted)
-    // Everyone else (including other admins) can only see published forms
-    const query = {
+    // Build base match conditions
+    const baseMatch: any = {
       $or: [
         // User's own forms (except deleted)
         {
           createdBy: userId,
-          status: { $ne: FormStatus.DELETED }
+          status: { $ne: FormStatus.DELETED },
         },
         // Published forms from others
         {
-          status: FormStatus.PUBLISHED
-        }
-      ]
+          status: FormStatus.PUBLISHED,
+        },
+      ],
     };
 
-    // Fetch forms and total count in parallel
-    const [forms, total] = await Promise.all([
-      Form.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
-      Form.countDocuments(query)
-    ]);
+    // Add search conditions if provided
+    if (search) {
+      baseMatch.$and = [
+        {
+          $or: [
+            { title: { $regex: search, $options: "i" } },
+            { description: { $regex: search, $options: "i" } },
+          ],
+        },
+      ];
+    }
+
+    // Aggregation pipeline to get forms with user's response status
+    const pipeline: any[] = [
+      // Match forms based on access and search
+      { $match: baseMatch },
+
+      // Lookup user's responses for each form
+      {
+        $lookup: {
+          from: "formresponses",
+          let: { formId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$formId", "$$formId"] },
+                    { $eq: ["$userId", userId] },
+                  ],
+                },
+              },
+            },
+            { $limit: 1 }, // We only need to know if at least one exists
+          ],
+          as: "userResponses",
+        },
+      },
+
+      // Add 'responded' field based on whether user has any responses
+      {
+        $addFields: {
+          responded: { $gt: [{ $size: "$userResponses" }, 0] },
+        },
+      },
+
+      // Remove the userResponses array (we don't need to send it to frontend)
+      {
+        $project: {
+          userResponses: 0,
+        },
+      },
+
+      // Sort by creation date
+      { $sort: { createdAt: -1 } },
+
+      // Facet for pagination and total count
+      {
+        $facet: {
+          data: [{ $skip: skip }, { $limit: limit }],
+          totalCount: [{ $count: "count" }],
+        },
+      },
+    ];
+
+    const result = await Form.aggregate(pipeline);
+
+    const forms = result[0].data;
+    const total = result[0].totalCount[0]?.count || 0;
 
     res.json({
       data: forms,
@@ -53,16 +123,17 @@ export const getForms = asyncHandler(async (req: AuthRequest, res: Response) => 
         total,
         page,
         limit,
-        pages: Math.ceil(total / limit)
-      }
+        pages: Math.ceil(total / limit),
+      },
     });
-});
-
+  }
+);
 
 /**
  * Get a form by id
  */
-export const getFormById = asyncHandler(async (req: AuthRequest, res: Response) => {
+export const getFormById = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const userId = req.user?.userId;
     const userRole = req.user?.role;
@@ -83,7 +154,11 @@ export const getFormById = asyncHandler(async (req: AuthRequest, res: Response) 
 
     if (form.createdBy.toString() !== userId) {
       // Admin accessing their own form
-      if (form.status === FormStatus.DRAFT || form.status === FormStatus.ARCHIVED || form.status === FormStatus.UNPUBLISHED) {
+      if (
+        form.status === FormStatus.DRAFT ||
+        form.status === FormStatus.ARCHIVED ||
+        form.status === FormStatus.UNPUBLISHED
+      ) {
         throw AppError.forbidden("Form is not published, hence not accessible");
       }
     }
@@ -99,12 +174,14 @@ export const getFormById = asyncHandler(async (req: AuthRequest, res: Response) 
     // }
 
     res.json(form);
-});
+  }
+);
 
 /**
  * Update a form
  */
-export const updateForm = asyncHandler(async (req: AuthRequest, res: Response) => {
+export const updateForm = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
     const form = await Form.findOneAndUpdate(
       { _id: req.params.id, createdBy: req.user.userId },
       req.body,
@@ -114,12 +191,14 @@ export const updateForm = asyncHandler(async (req: AuthRequest, res: Response) =
       throw AppError.notFound("Form not found or unauthorized");
     }
     res.json(form);
-});  
+  }
+);
 
 /**
  * Delete a form
  */
-export const deleteForm = asyncHandler(async (req: AuthRequest, res: Response) => {
+export const deleteForm = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
     const form = await Form.findOneAndUpdate(
       { _id: req.params.id, createdBy: req.user.userId },
       { status: FormStatus.DELETED },
@@ -129,4 +208,39 @@ export const deleteForm = asyncHandler(async (req: AuthRequest, res: Response) =
       throw AppError.notFound("Form not found or unauthorized");
     }
     res.json({ message: "Form deleted successfully" });
-});
+  }
+);
+
+/**
+ * Get form statistics with time-based filtering
+ */
+export const getFormStats = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    const timeFilter = (req.query.timeFilter as string) || "all";
+    const dateFilter = buildDateFilter(timeFilter);
+
+    // Exclude deleted forms from stats
+    const baseFilter = {
+      ...dateFilter,
+      status: { $ne: FormStatus.DELETED },
+    };
+
+    const [totalForms, publishedForms, responseAggregation] = await Promise.all(
+      [
+        Form.countDocuments(baseFilter),
+        Form.countDocuments({ ...baseFilter, status: FormStatus.PUBLISHED }),
+        Form.aggregate([
+          { $match: baseFilter },
+          { $group: { _id: null, total: { $sum: "$responseCount" } } },
+        ]),
+      ]
+    );
+
+    res.json({
+      totalForms,
+      publishedForms,
+      totalResponses: responseAggregation[0]?.total || 0,
+      timeFilter,
+    });
+  }
+);
