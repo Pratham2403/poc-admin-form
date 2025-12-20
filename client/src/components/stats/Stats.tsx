@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState, ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { StatCard } from "./StatCard";
 import { Button } from "../ui/Button";
 import { cn } from "../../lib/utils";

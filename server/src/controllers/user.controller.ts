@@ -238,7 +238,7 @@ export const updateUser = asyncHandler(
  */
 export const updateUserProfile = asyncHandler(
   async (req: AuthRequest, res: Response) => {
-    const userId = req.user.userId;
+    const userId = req.user!.userId;
     const { address, city } = req.body;
 
     const user = await User.findById(userId);

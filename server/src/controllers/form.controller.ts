@@ -13,7 +13,7 @@ export const createForm = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const form = await Form.create({
       ...req.body,
-      createdBy: req.user.userId,
+      createdBy: req.user!.userId,
     });
     res.status(201).json(form);
   }
@@ -26,7 +26,7 @@ export const createForm = asyncHandler(
 export const getForms = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     // const userId = req.user.userId;
-    const userId = new mongoose.Types.ObjectId(req.user.userId);
+    const userId = new mongoose.Types.ObjectId(req.user!.userId);
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 9; // Default to 9 for grid view (3x3)
     const search = (req.query.search as string) || "";
@@ -183,7 +183,7 @@ export const getFormById = asyncHandler(
 export const updateForm = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const form = await Form.findOneAndUpdate(
-      { _id: req.params.id, createdBy: req.user.userId },
+      { _id: req.params.id, createdBy: req.user!.userId },
       req.body,
       { new: true }
     );
@@ -200,7 +200,7 @@ export const updateForm = asyncHandler(
 export const deleteForm = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const form = await Form.findOneAndUpdate(
-      { _id: req.params.id, createdBy: req.user.userId },
+      { _id: req.params.id, createdBy: req.user!.userId },
       { status: FormStatus.DELETED },
       { new: true }
     );

@@ -121,7 +121,7 @@ export const updateResponse = asyncHandler(
       req.body.answers && req.body.answers.answers
         ? req.body.answers.answers
         : req.body.answers;
-    const userId = req.user.userId;
+    const userId = req.user!.userId;
 
     const response = await FormResponse.findOne({ _id: id, userId });
     if (!response) {
@@ -210,7 +210,7 @@ export const updateResponse = asyncHandler(
  */
 export const getMyResponses = asyncHandler(
   async (req: AuthRequest, res: Response) => {
-    const userId = req.user.userId;
+    const userId = req.user!.userId;
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const search = (req.query.search as string) || "";
@@ -346,7 +346,7 @@ export const getFormResponses = asyncHandler(
 export const getResponseById = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user!.userId;
 
     const response = await FormResponse.findOne({ _id: id, userId }).populate(
       "formId",
@@ -366,7 +366,7 @@ export const getResponseById = asyncHandler(
  */
 export const getMySubmissionCount = asyncHandler(
   async (req: AuthRequest, res: Response) => {
-    const userId = new mongoose.Types.ObjectId(req.user.userId);
+    const userId = new mongoose.Types.ObjectId(req.user!.userId);
     const timeFilter = (req.query.timeFilter as string) || "all"; // today, month, all
 
     let dateFilter: any = {};

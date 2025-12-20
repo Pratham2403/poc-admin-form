@@ -16,7 +16,6 @@ import { getSettings, updateSettings } from '../../services/systemSettings.servi
 import {
   Settings,
   Clock,
-  Save,
   CheckCircle2
 } from 'lucide-react';
 

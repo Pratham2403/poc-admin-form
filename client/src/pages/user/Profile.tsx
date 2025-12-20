@@ -20,7 +20,6 @@ import {
   MapPin,
   Building,
   Hash,
-  Save,
   CheckCircle2,
 } from "lucide-react";
 
