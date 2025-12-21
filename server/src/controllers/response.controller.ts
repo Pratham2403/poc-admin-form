@@ -2,16 +2,15 @@ import { Response } from "express";
 import mongoose from "mongoose";
 import FormResponse from "../models/FormResponse.model.ts";
 import Form from "../models/Form.model.ts";
-import User from "../models/User.model.ts"; // Added User import
+import User from "../models/User.model.ts";
 import { AuthRequest } from "../middlewares/auth.middleware.ts";
-import { syncResponseToSheet } from "../services/googleSheets.service.ts";
 import { FormStatus, QuestionType } from "@poc-admin-form/shared";
 import { asyncHandler } from "../utils/asyncHandler.ts";
 import { AppError } from "../errors/AppError.ts";
-import logger from "../lib/logger/index.ts";
 
 /**
  * Submit a response to a form
+ * Note: Google Sheets sync is handled by MongoDB Atlas Triggers
  */
 export const submitResponse = asyncHandler(
   async (req: AuthRequest, res: Response) => {
@@ -32,12 +31,6 @@ export const submitResponse = asyncHandler(
       throw AppError.notFound("Form not found");
     }
 
-    // Duplicate check removed to allow multiple responses per user
-    // const existingResponse = await FormResponse.findOne({ formId, userId });
-    // if (existingResponse) {
-    //     return res.status(409).json({ message: 'You have already submitted this form.' });
-    // }
-
     // Validate Short Answer Lengths
     for (const q of form.questions) {
       if (q.type === QuestionType.SHORT_ANSWER && answers[q.id]) {
@@ -50,52 +43,31 @@ export const submitResponse = asyncHandler(
       }
     }
 
-    let googleSheetRowNumber = undefined;
-
-    // Google Sheet Sync - STRICT MAPPING
-    // Columns: [User ID, Name, Email, Q1, Q2, ...]
-    if (form.googleSheetUrl) {
-      try {
-        // Fetch User Details for robust data
-        let userDetails = {
-          id: "Anonymous",
-          name: "Anonymous",
-          email: "Anonymous",
+    // Prepare user metadata for Atlas Trigger to use
+    let userMetadata = {
+      id: "Anonymous",
+      name: "Anonymous",
+      email: "Anonymous",
+    };
+    if (userId) {
+      const user = await User.findById(userId);
+      if (user) {
+        userMetadata = {
+          id: String(user._id),
+          name: user.name || "Unknown",
+          email: user.email || "Unknown",
         };
-        if (userId) {
-          const user = await User.findById(userId);
-          if (user) {
-            userDetails = {
-              id: String(user._id),
-              name: user.name || "Unknown",
-              email: user.email || "Unknown",
-            };
-          }
-        }
-
-        const rowNum = await syncResponseToSheet(
-          form.googleSheetUrl,
-          undefined,
-          userDetails,
-          answers,
-          form.questions
-        );
-        if (rowNum) {
-          googleSheetRowNumber = rowNum;
-        }
-      } catch (err) {
-        // We don't fail the request if sheet sync fails, but we log it.
-        logger.warn("Failed to sync to Responses to Google Sheets", {
-          context: { formId, error: (err as Error).message },
-        });
       }
     }
 
+    // Create response - Atlas Trigger will handle Google Sheets sync
     const response = await FormResponse.create({
       formId,
       userId,
-      answers, // Sanitized answers
-      googleSheetRowNumber,
+      answers,
+      userMetadata,
+      sheetSyncStatus: form.googleSheetUrl ? "pending" : "synced",
+      sheetSyncAttempts: 0,
     });
 
     await Form.findByIdAndUpdate(formId, { $inc: { responseCount: 1 } });
@@ -112,6 +84,7 @@ export const submitResponse = asyncHandler(
 
 /**
  * Update a response
+ * Note: Google Sheets sync is handled by MongoDB Atlas Triggers
  */
 export const updateResponse = asyncHandler(
   async (req: AuthRequest, res: Response) => {
@@ -151,58 +124,38 @@ export const updateResponse = asyncHandler(
       );
     }
 
-    // Fix Nested Response Bug: Clean assignment of sanitized answers.
-    response.answers = answers;
-    response.markModified("answers"); // Explicitly mark modified for Mixed/Map types just in case
-
-    await response.save();
-
-    if (form.googleSheetUrl && response.googleSheetRowNumber) {
-      try {
-        // Fetch User Details for robust data (in case name changed)
-        let userDetails = {
-          id: "Anonymous",
-          name: "Anonymous",
-          email: "Anonymous",
+    // Update user metadata in case it changed
+    let userMetadata = {
+      id: "Anonymous",
+      name: "Anonymous",
+      email: "Anonymous",
+    };
+    if (userId) {
+      const user = await User.findById(userId);
+      if (user) {
+        userMetadata = {
+          id: String(user._id),
+          name: user.name || "Unknown",
+          email: user.email || "Unknown",
         };
-        if (userId) {
-          const user = await User.findById(userId);
-          if (user) {
-            userDetails = {
-              id: String(user._id),
-              name: user.name || "Unknown",
-              email: user.email || "Unknown",
-            };
-          }
-        }
-
-        await syncResponseToSheet(
-          form.googleSheetUrl,
-          String(response.googleSheetRowNumber),
-          userDetails,
-          answers,
-          form.questions
-        );
-      } catch (err) {
-        logger.warn("Failed to sync update to Responses to Google Sheets", {
-          context: { responseId: id, error: (err as Error).message },
-        });
       }
     }
+
+    // Update response - Atlas Trigger will handle Google Sheets sync
+    response.answers = answers;
+    response.userMetadata = userMetadata;
+    // Reset sync status to trigger re-sync via Atlas Trigger
+    if (form.googleSheetUrl) {
+      response.sheetSyncStatus = "pending";
+    }
+    response.markModified("answers");
+    response.markModified("userMetadata");
+
+    await response.save();
 
     res.json(response);
   }
 );
-
-// export const getResponses = async (req: AuthRequest, res: Response) => {
-//     try {
-//         const { formId } = req.params;
-//         const responses = await FormResponse.find({ formId }).populate('userId', 'name email');
-//         res.json(responses);
-//     } catch (error) {
-//         res.status(500).json({ message: 'Error fetching responses', error });
-//     }
-// };
 
 /**
  * Get all form groups for the current user (without responses array)
