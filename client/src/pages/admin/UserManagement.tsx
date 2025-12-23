@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { getUsers } from "../../services/user.service";
+import { getSettings } from "../../services/systemSettings.service";
 import { type IUser, UserRole } from "@poc-admin-form/shared";
 import { useToast } from "../../components/ui/Toast";
 import { Button } from "../../components/ui/Button";
@@ -15,29 +16,48 @@ import {
   Mail,
   User,
   Shield,
-  Clock,
   MapPin,
   Building,
   Hash,
+  Circle,
 } from "lucide-react";
 
-const formatLastActive = (lastHeartbeat?: Date | string): string => {
-  if (!lastHeartbeat) return "Never";
+/**
+ * Format last active status based on heartbeat window
+ * @param lastHeartbeat - The last heartbeat timestamp
+ * @param heartbeatWindowHours - The heartbeat window in hours (default: 1)
+ * @returns Object with status text and whether user is online
+ */
+const formatLastActive = (
+  lastHeartbeat?: Date | string,
+  heartbeatWindowHours: number = 1
+): { text: string; isOnline: boolean } => {
+  if (!lastHeartbeat) return { text: "Never", isOnline: false };
 
   const date =
     typeof lastHeartbeat === "string" ? new Date(lastHeartbeat) : lastHeartbeat;
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
+  const windowMs = heartbeatWindowHours * 60 * 60 * 1000;
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return "Online";
-  if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? "s" : ""} ago`;
-  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
-  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+  // User is online if within heartbeat window
+  const isOnline = diffMs < windowMs;
 
-  return date.toLocaleDateString();
+  if (diffMins < 1) return { text: "Just now", isOnline };
+  if (diffMins < 60)
+    return { text: `${diffMins} min${diffMins > 1 ? "s" : ""} ago`, isOnline };
+  if (diffHours < 24)
+    return {
+      text: `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`,
+      isOnline,
+    };
+  if (diffDays < 7)
+    return { text: `${diffDays} day${diffDays > 1 ? "s" : ""} ago`, isOnline };
+
+  return { text: date.toLocaleDateString(), isOnline: false };
 };
 
 export const UserManagement = () => {
@@ -48,8 +68,23 @@ export const UserManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
+  const [heartbeatWindow, setHeartbeatWindow] = useState(1); // Default 1 hour
 
   const { addToast } = useToast();
+
+  // Fetch heartbeat window from system settings
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const settings = await getSettings();
+        setHeartbeatWindow(settings.heartbeat_window);
+      } catch {
+        // Fallback to default 1 hour if settings can't be loaded
+        setHeartbeatWindow(1);
+      }
+    };
+    loadSettings();
+  }, []);
 
   const loadUsers = useCallback(
     async (page = 1, search = "") => {
@@ -250,10 +285,37 @@ export const UserManagement = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span>{formatLastActive(user.lastHeartbeat)}</span>
-                      </div>
+                      {(() => {
+                        const { text, isOnline } = formatLastActive(
+                          user.lastHeartbeat,
+                          heartbeatWindow
+                        );
+                        return (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Circle
+                              className={`h-3 w-3 ${
+                                isOnline
+                                  ? "fill-green-500 text-green-500"
+                                  : "fill-gray-400 text-gray-400"
+                              }`}
+                            />
+                            <span
+                              className={
+                                isOnline
+                                  ? "text-green-600 dark:text-green-400 font-medium"
+                                  : ""
+                              }
+                            >
+                              {isOnline ? "Online" : text}
+                            </span>
+                            {isOnline && text !== "Just now" && (
+                              <span className="text-muted-foreground">
+                                ({text})
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <Button variant="ghost" size="sm" asChild>

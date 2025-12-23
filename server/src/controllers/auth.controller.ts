@@ -15,68 +15,72 @@ import { UserRole } from "@poc-admin-form/shared";
  * Register a new user
  * Only super admin can set modulePermissions
  */
-export const register = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { 
-    email, 
-    password, 
-    name, 
-    role, 
-    address, 
-    city, 
-    employeeId, 
-    vendorId, 
-    modulePermissions 
-  } = req.body;
-  
-  const userExists = await User.findOne({ email });
+export const register = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    const {
+      email,
+      password,
+      name,
+      role,
+      address,
+      city,
+      employeeId,
+      vendorId,
+      modulePermissions,
+    } = req.body;
 
-  if (userExists) {
-    throw AppError.badRequest("User already exists");
-  }
+    const userExists = await User.findOne({ email });
 
-  // Use provided password or default to "password123"
-  const userPassword = password || "password123";
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(userPassword, salt);
-
-  // Only super admin can set modulePermissions
-  const currentUser = req.user;
-  let finalModulePermissions = undefined;
-  
-  if (modulePermissions) {
-    if (currentUser?.role !== UserRole.SUPERADMIN) {
-      throw AppError.forbidden("Only super admin can set module permissions");
+    if (userExists) {
+      throw AppError.badRequest("User already exists");
     }
-    
-    // Validate module permissions structure
-    if (
-      typeof modulePermissions !== 'object' ||
-      typeof modulePermissions.users !== 'boolean' ||
-      typeof modulePermissions.forms !== 'boolean'
-    ) {
-      throw AppError.badRequest("Invalid module permissions structure. Must be { users: boolean, forms: boolean }");
+
+    // Use provided password or default to "password123"
+    const userPassword = password || "password123";
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(userPassword, salt);
+
+    // Only super admin can set modulePermissions
+    const currentUser = req.user;
+    let finalModulePermissions = undefined;
+
+    if (modulePermissions) {
+      if (currentUser?.role !== UserRole.SUPERADMIN) {
+        throw AppError.forbidden("Only super admin can set module permissions");
+      }
+
+      // Validate module permissions structure
+      if (
+        typeof modulePermissions !== "object" ||
+        typeof modulePermissions.users !== "boolean" ||
+        typeof modulePermissions.forms !== "boolean"
+      ) {
+        throw AppError.badRequest(
+          "Invalid module permissions structure. Must be { users: boolean, forms: boolean }"
+        );
+      }
+
+      finalModulePermissions = modulePermissions;
     }
-    
-    finalModulePermissions = modulePermissions;
+
+    await User.create({
+      email,
+      password: hashedPassword,
+      name,
+      role: role || UserRole.USER,
+      address,
+      city,
+      employeeId,
+      vendorId,
+      modulePermissions: finalModulePermissions,
+    });
+
+    res.status(201).json({
+      message: `User ${name} created successfully`,
+      success: true,
+    });
   }
-
-  await User.create({
-    email,
-    password: hashedPassword,
-    name,
-    role: role || UserRole.USER,
-    address,
-    city,
-    employeeId,
-    vendorId,
-    modulePermissions: finalModulePermissions,
-  });
-
-  res.status(201).json({
-    message: `User ${name} created successfully`,
-    success: true,
-  });
-});
+);
 
 /**
  * Login a user
@@ -91,7 +95,11 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     user.password &&
     (await bcrypt.compare(password, user.password))
   ) {
-    const accessToken = generateAccessToken(user._id.toString(), user.role, user.modulePermissions);
+    const accessToken = generateAccessToken(
+      user._id.toString(),
+      user.role,
+      user.modulePermissions
+    );
     const refreshToken = generateRefreshToken(user._id.toString());
 
     res.cookie("access_token", accessToken, {
@@ -152,13 +160,20 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
   }
 
   const decoded = verifyRefreshToken(refreshToken) as any;
-  const user = await User.findById(decoded.userId);
 
-  if (!user) {
-    throw AppError.unauthorized("User not found");
-  }
+  // Update lastHeartbeat on token refresh (user activity)
+  const user = await User.findByIdAndUpdate(
+    decoded.userId,
+    { lastHeartbeat: new Date() },
+    { new: true }
+  );
+  if (!user) throw AppError.unauthorized("User not found");
 
-  const accessToken = generateAccessToken(user._id.toString(), user.role, user.modulePermissions);
+  const accessToken = generateAccessToken(
+    user._id.toString(),
+    user.role,
+    user.modulePermissions
+  );
   const newRefreshToken = generateRefreshToken(user._id.toString());
 
   res.cookie("access_token", accessToken, {
