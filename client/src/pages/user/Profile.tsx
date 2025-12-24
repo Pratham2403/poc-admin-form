@@ -111,7 +111,7 @@ export const Profile = () => {
   return (
     <div className="w-full animate-in fade-in duration-500 space-y-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent flex items-center gap-3">
+        <h1 className="text-3xl font-bold bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent flex items-center gap-3">
           <User className="h-8 w-8 text-primary" />
           My Profile
         </h1>

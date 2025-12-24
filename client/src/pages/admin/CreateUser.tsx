@@ -40,7 +40,7 @@ export const CreateUser = () => {
     <div className="w-full max-w-4xl animate-in fade-in duration-500">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent flex items-center gap-3">
+        <h1 className="text-3xl font-bold bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent flex items-center gap-3">
           <UserPlus className="h-8 w-8 text-primary" />
           Create User
         </h1>

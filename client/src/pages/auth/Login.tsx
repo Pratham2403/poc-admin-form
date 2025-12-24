@@ -74,10 +74,10 @@ export const Login = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+    <div className="flex items-center justify-center min-h-screen bg-linear-to-br from-background via-background to-primary/5">
       <div className="w-full max-w-md px-4">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent">
             FormSuite
           </h1>
           <p className="text-muted-foreground mt-2">Form Management System</p>

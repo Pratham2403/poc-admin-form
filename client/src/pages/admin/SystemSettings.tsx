@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { useToast } from '../../components/ui/Toast';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
-import { Label } from '../../components/ui/Label';
+import { useState, useEffect } from "react";
+import { useToast } from "../../components/ui/Toast";
+import { Button } from "../../components/ui/Button";
+import { Input } from "../../components/ui/Input";
+import { Label } from "../../components/ui/Label";
 import {
   Card,
   CardContent,
@@ -10,14 +10,13 @@ import {
   CardTitle,
   CardDescription,
   CardFooter,
-} from '../../components/ui/Card';
-import { Spinner } from '../../components/ui/Spinner';
-import { getSettings, updateSettings } from '../../services/systemSettings.service';
+} from "../../components/ui/Card";
+import { Spinner } from "../../components/ui/Spinner";
 import {
-  Settings,
-  Clock,
-  CheckCircle2
-} from 'lucide-react';
+  getSettings,
+  updateSettings,
+} from "../../services/systemSettings.service";
+import { Settings, Clock, CheckCircle2 } from "lucide-react";
 
 export const SystemSettings = () => {
   const [heartbeatWindow, setHeartbeatWindow] = useState<number>(1);
@@ -32,7 +31,7 @@ export const SystemSettings = () => {
         const settings = await getSettings();
         setHeartbeatWindow(settings.heartbeat_window);
       } catch (err: any) {
-        addToast('Failed to load settings', 'error');
+        addToast("Failed to load settings", "error");
       } finally {
         setInitialLoading(false);
       }
@@ -45,16 +44,19 @@ export const SystemSettings = () => {
     e.preventDefault();
 
     if (heartbeatWindow <= 0) {
-      addToast('Heartbeat window must be a positive number', 'warning');
+      addToast("Heartbeat window must be a positive number", "warning");
       return;
     }
 
     setLoading(true);
     try {
       await updateSettings({ heartbeat_window: heartbeatWindow });
-      addToast('Settings updated successfully', 'success');
+      addToast("Settings updated successfully", "success");
     } catch (err: any) {
-      addToast(err.response?.data?.message || 'Failed to update settings', 'error');
+      addToast(
+        err.response?.data?.message || "Failed to update settings",
+        "error"
+      );
     } finally {
       setLoading(false);
     }
@@ -67,7 +69,7 @@ export const SystemSettings = () => {
   return (
     <div className="w-full max-w-4xl animate-in fade-in duration-500">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent flex items-center gap-3">
+        <h1 className="text-3xl font-bold bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent flex items-center gap-3">
           <Settings className="h-8 w-8 text-primary" />
           System Settings
         </h1>
@@ -86,7 +88,10 @@ export const SystemSettings = () => {
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-6 pt-6">
             <div className="space-y-2">
-              <Label htmlFor="heartbeatWindow" className="flex items-center gap-2">
+              <Label
+                htmlFor="heartbeatWindow"
+                className="flex items-center gap-2"
+              >
                 <Clock className="h-4 w-4 text-muted-foreground" />
                 Heartbeat Window (hours)
               </Label>
@@ -96,20 +101,27 @@ export const SystemSettings = () => {
                 min="0.1"
                 step="0.1"
                 value={heartbeatWindow}
-                onChange={(e) => setHeartbeatWindow(parseFloat(e.target.value) || 1)}
+                onChange={(e) =>
+                  setHeartbeatWindow(parseFloat(e.target.value) || 1)
+                }
                 placeholder="1"
                 className="bg-background/50"
                 disabled={loading}
                 required
               />
               <p className="text-xs text-muted-foreground">
-                Time window (in hours) to determine if a user is considered "online". 
-                Users who have visited within this window will be marked as active.
+                Time window (in hours) to determine if a user is considered
+                "online". Users who have visited within this window will be
+                marked as active.
               </p>
             </div>
           </CardContent>
           <CardFooter className="flex justify-end border-t border-border/40 bg-muted/20 py-4 gap-3">
-            <Button type="submit" disabled={loading} className="min-w-[140px] shadow-lg hover:shadow-xl transition-all">
+            <Button
+              type="submit"
+              disabled={loading}
+              className="min-w-[140px] shadow-lg hover:shadow-xl transition-all"
+            >
               {loading ? (
                 <>
                   <Spinner size="sm" className="mr-2" />
@@ -128,4 +140,3 @@ export const SystemSettings = () => {
     </div>
   );
 };
-

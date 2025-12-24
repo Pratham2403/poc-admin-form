@@ -94,7 +94,7 @@ export const AdminLogin = () => {
     <div className="flex items-center justify-center min-h-screen bg-slate-950 text-slate-50">
       <div className="w-full max-w-md px-4">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold bg-linear-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
             Admin Portal
           </h1>
           <p className="text-slate-400 mt-2">Restricted Access Area</p>

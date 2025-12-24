@@ -50,10 +50,10 @@ export const UserLayout = () => {
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-9 h-8 bg-gradient-to-br from-primary to-primary/60 rounded-lg flex items-center justify-center text-primary-foreground font-bold text-lg">
+            <div className="w-9 h-8 bg-linear-to-br from-primary to-primary/60 rounded-lg flex items-center justify-center text-primary-foreground font-bold text-lg">
               FS
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            <span className="text-xl font-bold bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent">
               FormSuite
             </span>
           </Link>
@@ -84,7 +84,7 @@ export const UserLayout = () => {
                   {user?.role}
                 </p>
               </div>
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground font-semibold">
+              <div className="w-9 h-9 rounded-full bg-linear-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground font-semibold">
                 {(user?.name || user?.email)?.charAt(0).toUpperCase()}
               </div>
             </div>
@@ -115,7 +115,7 @@ export const UserLayout = () => {
         {isMobileMenuOpen && (
           <div className="md:hidden border-t bg-background absolute left-0 right-0 h-[calc(100vh-4rem)] p-4 space-y-4 animate-in slide-in-from-top-5">
             <div className="flex items-center gap-3 mb-6 p-4 bg-muted/50 rounded-lg">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground font-semibold text-lg">
+              <div className="w-10 h-10 rounded-full bg-linear-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground font-semibold text-lg">
                 {(user?.name || user?.email)?.charAt(0).toUpperCase()}
               </div>
               <div>
