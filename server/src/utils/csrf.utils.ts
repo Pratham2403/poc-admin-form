@@ -22,7 +22,7 @@ export const attachCSRFToken = (
     res.cookie("csrf_token", token, {
       httpOnly: false, // Must be readable by client JS
       secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax", // 'strict' for same-domain production
+      sameSite: "lax", // 'lax' allows cookie on initial navigation, required for CSRF double-submit pattern
       path: "/",
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     });
