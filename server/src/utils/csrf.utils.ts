@@ -22,7 +22,8 @@ export const attachCSRFToken = (
     res.cookie("csrf_token", token, {
       httpOnly: false, // Must be readable by client JS
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax", // 'lax' works for same-site in production, 'lax' for dev
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax", // 'strict' for same-domain production
+      path: "/",
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     });
     req.csrfToken = token;
