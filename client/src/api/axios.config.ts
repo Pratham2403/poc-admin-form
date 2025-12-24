@@ -3,11 +3,13 @@ import axios from 'axios';
 
 const userStorageKey = import.meta.env.VITE_USER_STORAGE_KEY || 'user';
 
+const baseURL = import.meta.env.VITE_API_BASE_URL || "/api";
+
 // Store CSRF token
 let csrfToken: string | null = null;
 
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || "/api",
+    baseURL: baseURL,
     withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
@@ -20,7 +22,7 @@ api.interceptors.request.use(
         // Get CSRF token if we don't have it
         if (!csrfToken) {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/auth/csrf-token`, {
+                const response = await axios.get(`${baseURL}/auth/csrf-token`, {
                     withCredentials: true,
                 });
                 csrfToken = response.data.csrfToken;
