@@ -58,7 +58,7 @@ export const AdminDashboard = () => {
   const [viewType, setViewType] = useState<ViewType>(() => {
     return (
       (localStorage.getItem(
-        import.meta.env.VITE_VIEW_PREFERENCE_KEY || "view_preference"
+        import.meta.env.VITE_VIEW_PREFERENCE_KEY
       ) as ViewType) || ViewType.GRID
     );
   });
@@ -187,7 +187,7 @@ export const AdminDashboard = () => {
   };
 
   const copyServiceEmail = () => {
-    const email = import.meta.env.VITE_SERVICE_ACCOUNT_EMAIL || "webcse@promptwithai-400718.iam.gserviceaccount.com";
+    const email = import.meta.env.VITE_SERVICE_ACCOUNT_EMAIL;
     if (email) {
       navigator.clipboard.writeText(email);
       addToast("Service account email copied!", "success");

@@ -40,7 +40,7 @@ export const FormsList = () => {
   const [viewType, setViewType] = useState<ViewType>(() => {
     return (
       (localStorage.getItem(
-        import.meta.env.VITE_VIEW_PREFERENCE_KEY || "view_preference"
+        import.meta.env.VITE_VIEW_PREFERENCE_KEY
       ) as ViewType) || ViewType.GRID
     );
   });
