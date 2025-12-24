@@ -105,14 +105,14 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     res.cookie("access_token", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Cross-site support for Render
+      sameSite: "lax", // 'lax' for same-site in production
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
 
     res.cookie("refresh_token", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Cross-site support for Render
+      sameSite: "lax", // 'lax' for same-site in production
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -136,13 +136,13 @@ export const logout = (_req: Request, res: Response) => {
   res.cookie("access_token", "", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    sameSite: "lax",
     expires: new Date(0),
   });
   res.cookie("refresh_token", "", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    sameSite: "lax",
     expires: new Date(0),
   });
   res.status(200).json({ message: "Logged out successfully" });
@@ -179,7 +179,7 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
   res.cookie("access_token", accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    sameSite: "lax",
     maxAge: 15 * 60 * 1000, // 15 minutes
   });
 
@@ -188,7 +188,7 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
   res.cookie("refresh_token", newRefreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    sameSite: "lax",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 
