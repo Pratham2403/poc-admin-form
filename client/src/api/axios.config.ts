@@ -7,7 +7,7 @@ const userStorageKey = import.meta.env.VITE_USER_STORAGE_KEY || 'user';
 let csrfToken: string | null = null;
 
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL,
+    baseURL: import.meta.env.VITE_API_BASE_URL || "/api",
     withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
