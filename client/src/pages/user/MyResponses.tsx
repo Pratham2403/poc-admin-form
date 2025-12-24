@@ -1,14 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useDebouncedEffect } from "../../hooks/useDebounce";
 import { Link } from "react-router-dom";
-import {
-  Eye,
-  Pencil,
-  FileText,
-  Clock,
-  CheckCircle,
-  BarChart3,
-} from "lucide-react";
+import { Eye, Pencil, FileText, Clock, CheckCircle } from "lucide-react";
 import {
   getMyResponses,
   getFormResponses,
@@ -27,7 +20,6 @@ import { PageLoader, Spinner } from "../../components/ui/Spinner";
 import { usePortalPath } from "../../hooks/usePortalPath";
 import { SearchFilterBar } from "../../components/ui/SearchFilterBar";
 import { Pagination } from "../../components/ui/Pagination";
-import { StatCard } from "../../components/stats/StatCard";
 import { type IForm } from "@poc-admin-form/shared";
 
 // Form group from getMyResponses (without responses array)
@@ -73,12 +65,6 @@ export const MyResponses = () => {
 
   const { addToast } = useToast();
   const { getPath } = usePortalPath();
-
-  // Calculate total submission count from all form groups
-  const totalSubmissionCount = formGroups.reduce(
-    (acc, group) => acc + group.responseCount,
-    0
-  );
 
   // Load form groups (without responses)
   const loadFormGroups = useCallback(
@@ -192,13 +178,6 @@ export const MyResponses = () => {
           <p className="text-muted-foreground mt-2 text-lg">
             Manage your submissions across different forms.
           </p>
-        </div>
-        <div className="flex-shrink-0">
-          <StatCard
-            icon={<BarChart3 className="h-6 w-6 text-blue-500" />}
-            title="Submissions"
-            value={totalSubmissionCount}
-          />
         </div>
       </div>
       {/* Search Bar */}

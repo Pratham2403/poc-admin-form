@@ -6,6 +6,8 @@ import {
   updateUser,
   updateUserProfile,
   getUserSubmissionCount,
+  getUserAnalytics,
+  getAdminAnalytics,
 } from "../controllers/user.controller";
 import {
   authenticate,
@@ -17,12 +19,33 @@ import { UserRole } from "@poc-admin-form/shared";
 
 const router = express.Router();
 
-// Specific routes MUST come before parameterized routes (/:id)
-
-// User profile update route (no module check needed)
+/**
+ * Update User Profile
+ */
 router.put("/profile", authenticate, heartbeat, updateUserProfile);
 
-// Admin routes: authenticate → heartbeat → authorize([ADMIN, SUPERADMIN]) → authorizeModule('users')
+/**
+ * Get user analytics (for profile page)
+ * Accessible by the user themselves
+ */
+router.get("/analytics/me", authenticate, heartbeat, getUserAnalytics);
+
+/**
+ * Get admin analytics (for admin dashboard)
+ * Accessible SUPERADMIN and ADMIN
+ */
+router.get(
+  "/analytics/admin",
+  authenticate,
+  heartbeat,
+  authorize([UserRole.ADMIN, UserRole.SUPERADMIN]),
+  getAdminAnalytics
+);
+
+/*
+ * Get all users with pagination and search
+ * Accessible SUPERADMIN and ADMIN with 'users' module permission
+ */
 router.get(
   "/",
   authenticate,
@@ -32,6 +55,10 @@ router.get(
   getUsers
 );
 
+/*
+ * Create a new user
+ * Accessible SUPERADMIN and ADMIN with 'users' module permission
+ */
 router.post(
   "/",
   authenticate,
@@ -41,9 +68,15 @@ router.post(
   createUser
 );
 
-// Parameterized routes come AFTER specific routes
+/*
+ * Get user by ID
+ */
 router.get("/:id", authenticate, heartbeat, getUserById);
 
+/*
+ * Update user by ID
+ * Accessible SUPERADMIN and ADMIN with 'users' module permission
+ */
 router.put(
   "/:id",
   authenticate,
@@ -53,6 +86,10 @@ router.put(
   updateUser
 );
 
+/*
+ * Get user activity (submission count)
+ * Accessible SUPERADMIN and ADMIN with 'users' module permission
+ */
 router.get(
   "/:id/activity",
   authenticate,

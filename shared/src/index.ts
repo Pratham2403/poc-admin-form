@@ -8,3 +8,4 @@ export * from './interfaces/IForm.interface.ts';
 export * from './interfaces/IQuestion.interface.ts';
 export * from './interfaces/IValidationRule.interface.ts';
 export * from './enums/SheetValidationStatus.enum.ts';
+export * from './enums/UserMode.enum.ts';

@@ -9,6 +9,10 @@ import {
   type FormStats,
   type TimeFilter as ApiTimeFilter,
 } from "../../services/form.service";
+import {
+  getAdminAnalytics,
+  type AdminAnalytics,
+} from "../../services/user.service";
 import { type IForm, FormStatus, UserRole } from "@poc-admin-form/shared";
 import { useAuth } from "../../contexts/AuthContext";
 import { useToast } from "../../components/ui/Toast";
@@ -42,6 +46,9 @@ import {
   Clock,
   UserCog,
   Pencil,
+  Users,
+  FileClock,
+  TrendingUp,
 } from "lucide-react";
 
 export const AdminDashboard = () => {
@@ -69,6 +76,14 @@ export const AdminDashboard = () => {
     publishedForms: 0,
     totalResponses: 0,
     timeFilter: "all",
+  });
+
+  // Admin Analytics State
+  const [adminAnalytics, setAdminAnalytics] = useState<AdminAnalytics>({
+    activeUsersCount: 0,
+    draftFormsCount: 0,
+    peakActivityHours: "N/A",
+    heartbeatWindowHours: 1,
   });
 
   const toggleView = (type: ViewType) => {
@@ -114,6 +129,15 @@ export const AdminDashboard = () => {
     [addToast]
   );
 
+  const loadAdminAnalytics = useCallback(async () => {
+    try {
+      const data = await getAdminAnalytics();
+      setAdminAnalytics(data);
+    } catch {
+      addToast("Failed to load admin analytics", "error");
+    }
+  }, [addToast]);
+
   // Debounced search effect - triggers on search or page change
   useDebouncedEffect(
     () => {
@@ -125,7 +149,8 @@ export const AdminDashboard = () => {
 
   useEffect(() => {
     loadStats("all");
-  }, [loadStats]);
+    loadAdminAnalytics();
+  }, [loadStats, loadAdminAnalytics]);
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
@@ -242,7 +267,7 @@ export const AdminDashboard = () => {
           )}
         </div>
       </div>
-      {/* Stats */}
+      {/* Unified Analytics Dashboard - Responsive 6-column grid */}
       <Stats
         stats={[
           {
@@ -260,8 +285,25 @@ export const AdminDashboard = () => {
             title: "Total Responses",
             value: stats.totalResponses,
           },
+          {
+            icon: <Users className="h-6 w-6 text-emerald-500" />,
+            title: "Currently Active Users",
+            value: adminAnalytics.activeUsersCount,
+          },
+          {
+            icon: <FileClock className="h-6 w-6 text-orange-500" />,
+            title: "Draft Forms",
+            value: adminAnalytics.draftFormsCount,
+          },
+          {
+            icon: <TrendingUp className="h-6 w-6 text-rose-500" />,
+            title: "Peak Activity Hours",
+            value: adminAnalytics.peakActivityHours,
+          },
         ]}
         onTimeFilterChange={(filter: TimeFilter) => {
+          // Only reload time-filtered stats (first 3 items)
+          // Admin analytics (last 3 items) remain static
           loadStats(filter as ApiTimeFilter);
         }}
       />
@@ -401,7 +443,11 @@ export const AdminDashboard = () => {
                 {hasFormsPermission ? (
                   <>
                     <Link to={`/admin/edit/${form._id}`} className="flex-1">
-                      <Button variant="outline" size="sm" className="w-full gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full gap-1"
+                      >
                         Edit
                       </Button>
                     </Link>

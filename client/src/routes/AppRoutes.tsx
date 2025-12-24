@@ -2,10 +2,10 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { Login } from "../pages/auth/Login";
 import { AdminLogin } from "../pages/admin/Login";
 import { CreateUser } from "../pages/admin/CreateUser";
+import { EditUser } from "../pages/admin/EditUser";
 import { UserManagement } from "../pages/admin/UserManagement";
 import { SystemSettings } from "../pages/admin/SystemSettings";
 import { Profile } from "../pages/user/Profile";
-
 import { UserLayout } from "../components/layout/UserLayout/UserLayout";
 import { AdminLayout } from "../components/layout/AdminLayout/AdminLayout";
 import { AuthGuard } from "../components/auth/AuthGuard/AuthGuard";
@@ -49,6 +49,9 @@ export const AppRoutes = () => {
           {/* System Settings - accessible to all admins */}
           <Route path="/admin/system-settings" element={<SystemSettings />} />
 
+          {/**Profile Page for the admins */}
+          <Route path="/admin/profile" element={<Profile />} />
+
           {/* Default Admin Redirect */}
           <Route
             path="/admin"
@@ -84,6 +87,7 @@ export const AppRoutes = () => {
         <Route element={<AdminLayout />}>
           <Route path="/admin/users" element={<UserManagement />} />
           <Route path="/admin/users/create" element={<CreateUser />} />
+          <Route path="/admin/users/:id" element={<EditUser />} />
         </Route>
       </Route>
 

@@ -59,12 +59,12 @@ export const AdminLayout = () => {
 
             <div className="flex-1 overflow-y-auto py-6 px-4">
                 <nav className="space-y-2">
-                    <div className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <div className="px-3 mb-2 text-sm font-bold text-muted-foreground uppercase tracking-wider">
                         Overview
                     </div>
                     <NavLink to="/admin/dashboard">Dashboard</NavLink>
 
-                    <div className="px-3 mt-6 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <div className="px-3 mt-6 mb-2 text-sm font-bold text-muted-foreground uppercase tracking-wider">
                         Management
                     </div>
                     <NavLink to="/admin/forms">Forms</NavLink>
@@ -79,6 +79,7 @@ export const AdminLayout = () => {
                         <NavLink to="/admin/users/create">Create User</NavLink>
                     )}
                     <NavLink to="/admin/system-settings">System Settings</NavLink>
+                    <NavLink to="/admin/profile">My Profile</NavLink>
                 </nav>
             </div>
 
