@@ -319,7 +319,7 @@ export const UserManagement = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <Button variant="ghost" size="sm" asChild>
-                        <Link to={`/admin/users/${user._id}`}>Edit</Link>
+                        <Link to={`/admin/users/${user._id}`}>View</Link>
                       </Button>
                     </td>
                   </tr>

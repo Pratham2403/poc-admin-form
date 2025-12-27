@@ -7,6 +7,7 @@ import {
   updateUserProfile,
   getUserSubmissionCount,
   getUserAnalytics,
+  getUserSubmissionsBreakdown,
   getAdminAnalytics,
 } from "../controllers/user.controller";
 import {
@@ -25,12 +26,6 @@ const router = express.Router();
 router.put("/profile", authenticate, heartbeat, updateUserProfile);
 
 /**
- * Get user analytics (for profile page)
- * Accessible by the user themselves
- */
-router.get("/analytics/me", authenticate, heartbeat, getUserAnalytics);
-
-/**
  * Get admin analytics (for admin dashboard)
  * Accessible SUPERADMIN and ADMIN
  */
@@ -41,6 +36,18 @@ router.get(
   authorize([UserRole.ADMIN, UserRole.SUPERADMIN]),
   getAdminAnalytics
 );
+
+/**
+ * Get user analytics (for profile page)
+ * Accessible by the user themselves
+ */
+router.get("/analytics/:id", authenticate, heartbeat, getUserAnalytics);
+
+/**
+ * Get user submissions breakdown per form
+ * Accessible by the user themselves or admins
+ */
+router.get("/submissions/:id", authenticate, heartbeat, getUserSubmissionsBreakdown);
 
 /*
  * Get all users with pagination and search
@@ -98,5 +105,6 @@ router.get(
   authorizeModule("users"),
   getUserSubmissionCount
 );
+
 
 export default router;

@@ -10,6 +10,7 @@ interface StatItem {
   icon: ReactNode;
   title: string;
   value: number | string;
+  hoverContent?: ReactNode;
 }
 
 interface StatsProps {
@@ -67,6 +68,7 @@ export const Stats: React.FC<StatsProps> = ({
             icon={stat.icon}
             title={stat.title}
             value={stat.value}
+            hoverContent={stat.hoverContent}
           />
         ))}
       </div>

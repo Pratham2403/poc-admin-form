@@ -49,6 +49,17 @@ export interface AdminAnalytics {
   heartbeatWindowHours: number;
 }
 
+export interface FormSubmissionItem {
+  formId: string;
+  formTitle: string;
+  count: number;
+}
+
+export interface SubmissionsBreakdown {
+  data: FormSubmissionItem[];
+  total: number;
+}
+
 
 
 export const getUsers = async (page = 1, limit = 10, search = "") => {
@@ -90,10 +101,11 @@ export const getUserSubmissionCount = async (
 };
 
 export const getUserAnalytics = async (
+  id: string,
   timeFilter?: "today" | "month" | "all"
 ): Promise<UserAnalytics> => {
-  const response = await api.get("/users/analytics/me", {
-    params: { timeFilter: timeFilter || "all" },
+  const response = await api.get(`/users/analytics/${id}`, {
+    params: { timeFilter: timeFilter || "all" }
   });
   return response.data;
 };
@@ -101,5 +113,12 @@ export const getUserAnalytics = async (
 
 export const getAdminAnalytics = async (): Promise<AdminAnalytics> => {
   const response = await api.get("/users/analytics/admin");
+  return response.data;
+};
+
+export const getUserSubmissionsBreakdown = async (
+  id: string
+): Promise<SubmissionsBreakdown> => {
+  const response = await api.get(`/users/submissions/${id}`);
   return response.data;
 };

@@ -346,7 +346,13 @@ export const getUserSubmissionCount = asyncHandler(
  */
 export const getUserAnalytics = asyncHandler(
   async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
     const userId = req.user!.userId;
+
+    if (req.user?.role === UserRole.USER && id !== userId) {
+      throw AppError.forbidden("You are not authorized to access this user's analytics");
+    }
+
     const timeFilter = (req.query.timeFilter as string) || "all"; // today, month, all
 
     let dateFilter = buildDateFilter(timeFilter);
@@ -355,7 +361,7 @@ export const getUserAnalytics = asyncHandler(
       ? { submittedAt: dateFilter.createdAt }
       : {};
 
-    const userObjectId = new mongoose.Types.ObjectId(userId);
+    const userObjectId = new mongoose.Types.ObjectId(id);
 
     // Get response count for time period
     const responseCount = await FormResponse.countDocuments({
@@ -378,6 +384,65 @@ export const getUserAnalytics = asyncHandler(
       formsRespondedTo: uniqueForms.length,
       totalSubmissions,
       timeFilter,
+    });
+  }
+);
+
+/**
+ * Get user submissions breakdown per form
+ */
+export const getUserSubmissionsBreakdown = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    const userId = req.user!.userId;
+
+    // Authorization check: users can only see their own data, admins can see any user
+    if (req.user?.role === UserRole.USER && id !== userId) {
+      throw AppError.forbidden("You are not authorized to access this user's data");
+    }
+
+    const userObjectId = new mongoose.Types.ObjectId(id);
+
+    // Aggregate submissions grouped by formId with form details
+    const submissionsBreakdown = await FormResponse.aggregate([
+      {
+        $match: {
+          userId: userObjectId, // Match as ObjectId, not string
+        },
+      },
+      {
+        $group: {
+          _id: "$formId",
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $lookup: {
+          from: "forms",
+          localField: "_id", // _id is already ObjectId (formId)
+          foreignField: "_id",
+          as: "formDetails",
+        },
+      },
+      {
+        $unwind: "$formDetails",
+      },
+      {
+        $project: {
+          _id: 0,
+          formId: "$_id",
+          formTitle: "$formDetails.title",
+          count: 1,
+        },
+      },
+      {
+        $sort: { count: -1 },
+      },
+    ]);
+
+    res.json({
+      data: submissionsBreakdown,
+      total: submissionsBreakdown.reduce((acc, item) => acc + item.count, 0),
     });
   }
 );

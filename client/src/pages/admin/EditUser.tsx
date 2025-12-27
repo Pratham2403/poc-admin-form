@@ -5,6 +5,7 @@ import { UserRole, UserMode } from "@poc-admin-form/shared";
 import { getUserById, updateUser } from "../../services/user.service";
 import { UserCog } from "lucide-react";
 import { UserForm } from "../../components/forms/UserForm/UserForm";
+import { UserStats } from "../../components/stats/UserStats";
 import { Spinner } from "../../components/ui/Spinner";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -100,7 +101,7 @@ export const EditUser = () => {
 
   if (fetchingUser) {
     return (
-      <div className="w-full max-w-4xl animate-in fade-in duration-500">
+      <div className="w-full animate-in fade-in duration-500">
         <div className="flex items-center justify-center py-12">
           <Spinner size="lg" />
         </div>
@@ -110,7 +111,7 @@ export const EditUser = () => {
 
   if (!userData) {
     return (
-      <div className="w-full max-w-4xl animate-in fade-in duration-500">
+      <div className="w-full animate-in fade-in duration-500">
         <div className="text-center py-12">
           <p className="text-muted-foreground">User not found</p>
         </div>
@@ -119,7 +120,7 @@ export const EditUser = () => {
   }
 
   return (
-    <div className="w-full max-w-4xl animate-in fade-in duration-500">
+    <div className="w-full animate-in fade-in duration-500 space-y-8">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent flex items-center gap-3">
@@ -130,6 +131,9 @@ export const EditUser = () => {
           Update user information and permissions.
         </p>
       </div>
+
+      {/* User Analytics Section */}
+      {id && <UserStats id={id} />}
 
       {/* User Form Component */}
       <UserForm

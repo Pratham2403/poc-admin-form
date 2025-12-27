@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "../../components/ui/Toast";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
@@ -13,13 +13,11 @@ import {
 } from "../../components/ui/Card";
 import { Spinner } from "../../components/ui/Spinner";
 import { useAuth } from "../../contexts/AuthContext";
+import { UserStats } from "../../components/stats/UserStats";
 import {
   updateUserProfile,
   getUserById,
-  getUserAnalytics,
-  type UserAnalytics,
 } from "../../services/user.service";
-import { Stats, type TimeFilter } from "../../components/stats/Stats";
 import {
   User,
   Mail,
@@ -27,9 +25,6 @@ import {
   Building,
   Hash,
   CheckCircle2,
-  BarChart3,
-  FileText,
-  Activity,
 } from "lucide-react";
 
 export const Profile = () => {
@@ -40,12 +35,6 @@ export const Profile = () => {
   const [vendorId, setVendorId] = useState("");
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [analytics, setAnalytics] = useState<UserAnalytics>({
-    responseCount: 0,
-    formsRespondedTo: 0,
-    totalSubmissions: 0,
-    timeFilter: "all",
-  });
   const { addToast } = useToast();
 
   useEffect(() => {
@@ -69,21 +58,6 @@ export const Profile = () => {
     loadProfile();
   }, [currentUser?._id, addToast]);
 
-  const loadAnalytics = useCallback(
-    async (timeFilter: "today" | "month" | "all" = "all") => {
-      try {
-        const data = await getUserAnalytics(timeFilter);
-        setAnalytics(data);
-      } catch {
-        addToast("Failed to load analytics", "error");
-      }
-    },
-    [addToast]
-  );
-
-  useEffect(() => {
-    loadAnalytics("all");
-  }, [loadAnalytics]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,6 +82,7 @@ export const Profile = () => {
     return <Spinner />;
   }
 
+
   return (
     <div className="w-full animate-in fade-in duration-500 space-y-8">
       <div className="mb-6">
@@ -120,29 +95,7 @@ export const Profile = () => {
         </p>
       </div>
 
-      {/* Analytics Stats */}
-      <Stats
-        stats={[
-          {
-            icon: <Activity className="h-6 w-6 text-blue-500" />,
-            title: "Activity Rate",
-            value: analytics.responseCount,
-          },
-          {
-            icon: <FileText className="h-6 w-6 text-green-500" />,
-            title: "Forms Responded",
-            value: analytics.formsRespondedTo,
-          },
-          {
-            icon: <BarChart3 className="h-6 w-6 text-purple-500" />,
-            title: "Total Submissions",
-            value: analytics.totalSubmissions,
-          },
-        ]}
-        onTimeFilterChange={(filter: TimeFilter) => {
-          loadAnalytics(filter);
-        }}
-      />
+      {currentUser?._id && <UserStats id={currentUser._id} />}
 
       <Card className="border-border/40 bg-card/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300">
         <CardHeader className="pb-4 border-b border-border/40 bg-muted/20">
