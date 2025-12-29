@@ -1,4 +1,5 @@
 import api from "../api/axios.config";
+import type { DateRange } from "../utils/dateRange.utils";
 
 export interface CreateUserData {
   email: string;
@@ -38,7 +39,8 @@ export interface UserAnalytics {
   responseCount: number;
   formsRespondedTo: number;
   totalSubmissions: number;
-  timeFilter: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface AdminAnalytics {
@@ -94,20 +96,26 @@ export const updateUserProfile = async (data: UpdateProfileData) => {
 
 export const getUserSubmissionCount = async (
   userId: string,
-  timeFilter?: "today" | "month" | "all"
+  range?: DateRange
 ) => {
   const response = await api.get(`/users/${userId}/activity`, {
-    params: { timeFilter: timeFilter || "all" },
+    params: {
+      startDate: range?.startDate,
+      endDate: range?.endDate,
+    },
   });
   return response.data;
 };
 
 export const getUserAnalytics = async (
   id: string,
-  timeFilter?: "today" | "month" | "all"
+  range?: DateRange
 ): Promise<UserAnalytics> => {
   const response = await api.get(`/users/analytics/${id}`, {
-    params: { timeFilter: timeFilter || "all" },
+    params: {
+      startDate: range?.startDate,
+      endDate: range?.endDate,
+    },
   });
   return response.data;
 };

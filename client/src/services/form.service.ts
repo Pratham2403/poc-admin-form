@@ -1,5 +1,6 @@
 import api from "../api/axios.config";
 import { type IForm } from "@poc-admin-form/shared";
+import type { DateRange } from "../utils/dateRange.utils";
 
 export const createForm = async (data: Partial<IForm>) => {
   const response = await api.post("/forms", data);
@@ -26,18 +27,20 @@ export const deleteForm = async (id: string) => {
   return response.data;
 };
 
-export type TimeFilter = "today" | "month" | "all";
-
 export interface FormStats {
   totalForms: number;
   publishedForms: number;
   totalResponses: number;
-  timeFilter: string;
+  startDate?: string;
+  endDate?: string;
 }
 
-export const getFormStats = async (
-  timeFilter: TimeFilter = "all"
-): Promise<FormStats> => {
-  const response = await api.get("/forms/stats", { params: { timeFilter } });
+export const getFormStats = async (range?: DateRange): Promise<FormStats> => {
+  const response = await api.get("/forms/stats", {
+    params: {
+      startDate: range?.startDate,
+      endDate: range?.endDate,
+    },
+  });
   return response.data;
 };

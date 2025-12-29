@@ -1,6 +1,8 @@
 /**
  * Build date filter for time-based queries
  */
+import { AppError } from "../errors/AppError";
+
 const IST_OFFSET_MINUTES = 5 * 60 + 30;
 
 const getISTDateParts = (date: Date) => {
@@ -37,6 +39,42 @@ export const buildDateFilter = (
     return { [field]: { $gte: start } };
   }
   return {};
+};
+
+/**
+ * Build date filter using explicit date range.
+ * Expects UTC ISO strings (the client converts IST wall-time to UTC instants).
+ */
+export const buildDateRangeFilter = (
+  startDate?: string,
+  endDate?: string,
+  field: string = "createdAt"
+): Record<string, unknown> => {
+  if (!startDate && !endDate) return {};
+
+  const filter: Record<string, Date> = {};
+
+  if (startDate) {
+    const start = new Date(startDate);
+    if (Number.isNaN(start.getTime())) {
+      throw AppError.badRequest("Invalid startDate");
+    }
+    filter.$gte = start;
+  }
+
+  if (endDate) {
+    const end = new Date(endDate);
+    if (Number.isNaN(end.getTime())) {
+      throw AppError.badRequest("Invalid endDate");
+    }
+    filter.$lte = end;
+  }
+
+  if (filter.$gte && filter.$lte && filter.$gte > filter.$lte) {
+    throw AppError.badRequest("startDate must be <= endDate");
+  }
+
+  return { [field]: filter };
 };
 
 /**

@@ -5,10 +5,11 @@ import {
   getUserAnalytics,
   type UserAnalytics,
 } from "../../services/user.service";
-import { Stats, type TimeFilter } from "./Stats";
+import { Stats } from "./Stats";
 import { SubmissionsPopover } from "./SubmissionsPopover";
 import { DefaultPopover } from "./DefaultPopover";
 import { BarChart3, FileText, Activity } from "lucide-react";
+import type { DateRange } from "../../utils/dateRange.utils";
 
 export const UserStats = ({ id }: { id: string }) => {
   const [initialLoading, setInitialLoading] = useState(true);
@@ -16,18 +17,16 @@ export const UserStats = ({ id }: { id: string }) => {
     responseCount: 0,
     formsRespondedTo: 0,
     totalSubmissions: 0,
-    timeFilter: "all",
+    startDate: undefined,
+    endDate: undefined,
   });
   const { addToast } = useToast();
 
   const loadAnalytics = useCallback(
-    async (
-      timeFilter: "today" | "month" | "all" = "all",
-      showLoading = false
-    ) => {
+    async (range?: DateRange, showLoading = false) => {
       try {
         if (showLoading) setInitialLoading(true);
-        const data = await getUserAnalytics(id, timeFilter);
+        const data = await getUserAnalytics(id, range);
         setAnalytics(data);
       } catch {
         addToast("Failed to load analytics", "error");
@@ -39,7 +38,7 @@ export const UserStats = ({ id }: { id: string }) => {
   );
 
   useEffect(() => {
-    loadAnalytics("all", true);
+    loadAnalytics(undefined, true);
   }, [loadAnalytics]);
 
   if (initialLoading) {
@@ -56,9 +55,7 @@ export const UserStats = ({ id }: { id: string }) => {
             title: "Activity Rate",
             value: analytics.responseCount,
             hoverContent: (
-              <DefaultPopover
-                text="Number of responses you submitted in the selected time range."
-              />
+              <DefaultPopover text="Number of responses you submitted in the selected time range." />
             ),
           },
           {
@@ -66,9 +63,7 @@ export const UserStats = ({ id }: { id: string }) => {
             title: "Forms Responded",
             value: analytics.formsRespondedTo,
             hoverContent: (
-              <DefaultPopover
-                text="Number of unique forms you responded to in the selected time range."
-              />
+              <DefaultPopover text="Number of unique forms you responded to in the selected time range." />
             ),
           },
           {
@@ -78,8 +73,10 @@ export const UserStats = ({ id }: { id: string }) => {
             hoverContent: <SubmissionsPopover userId={id} />,
           },
         ]}
-        onTimeFilterChange={(filter: TimeFilter) => {
-          loadAnalytics(filter);
+        showTimePresets={true}
+        showDateRange={false}
+        onDateRangeChange={(range) => {
+          loadAnalytics(range);
         }}
       />
     </>

@@ -7,7 +7,6 @@ import {
   updateForm,
   getFormStats,
   type FormStats,
-  type TimeFilter as ApiTimeFilter,
 } from "../../services/form.service";
 import {
   getAdminAnalytics,
@@ -26,13 +25,14 @@ import {
   CardFooter,
 } from "../../components/ui/Card";
 import { PageLoader } from "../../components/ui/Spinner";
-import { SearchFilterBar } from "../../components/ui/SearchFilterBar";
+import { SearchFilterBar } from "../../components/search-filter/SearchFilterBar";
 import { ViewToggle } from "../../components/ui/ViewToggle";
 import { Pagination } from "../../components/ui/Pagination";
 import { ViewType } from "@poc-admin-form/shared";
-import { Stats, type TimeFilter } from "../../components/stats/Stats";
+import { Stats } from "../../components/stats/Stats";
 import { DefaultPopover } from "../../components/stats/DefaultPopover";
 import { formatDateIST } from "../../utils/helper.utils";
+import type { DateRange } from "../../utils/dateRange.utils";
 import {
   ClipboardList,
   FileText,
@@ -79,8 +79,10 @@ export const AdminDashboard = () => {
     totalForms: 0,
     publishedForms: 0,
     totalResponses: 0,
-    timeFilter: "all",
+    startDate: undefined,
+    endDate: undefined,
   });
+  const [statsRange, setStatsRange] = useState<DateRange>({});
 
   // Admin Analytics State
   const [adminAnalytics, setAdminAnalytics] = useState<AdminAnalytics>({
@@ -122,9 +124,9 @@ export const AdminDashboard = () => {
   );
 
   const loadStats = useCallback(
-    async (timeFilter: ApiTimeFilter = "all") => {
+    async (range?: DateRange) => {
       try {
-        const data = await getFormStats(timeFilter);
+        const data = await getFormStats(range);
         setStats(data);
       } catch {
         addToast("Failed to load stats", "error");
@@ -152,7 +154,7 @@ export const AdminDashboard = () => {
   );
 
   useEffect(() => {
-    loadStats("all");
+    loadStats();
     loadAdminAnalytics();
   }, [loadStats, loadAdminAnalytics]);
 
@@ -261,15 +263,14 @@ export const AdminDashboard = () => {
       </div>
       {/* Unified Analytics Dashboard - Responsive 6-column grid */}
       <Stats
+        dateRange={statsRange}
         stats={[
           {
             icon: <FileText className="h-6 w-6 text-primary" />,
             title: "Total Forms",
             value: stats.totalForms,
             hoverContent: (
-              <DefaultPopover
-                text="Total number of forms created in the selected time range."
-              />
+              <DefaultPopover text="Total number of forms created in the selected time range." />
             ),
           },
           {
@@ -277,9 +278,7 @@ export const AdminDashboard = () => {
             title: "Published Forms",
             value: stats.publishedForms,
             hoverContent: (
-              <DefaultPopover
-                text="Number of forms that are currently published within the selected time range."
-              />
+              <DefaultPopover text="Number of forms that are currently published within the selected time range." />
             ),
           },
           {
@@ -287,9 +286,7 @@ export const AdminDashboard = () => {
             title: "Total Responses",
             value: stats.totalResponses,
             hoverContent: (
-              <DefaultPopover
-                text="Total responses received across your forms in the selected time range."
-              />
+              <DefaultPopover text="Total responses received across your forms in the selected time range." />
             ),
           },
           {
@@ -307,9 +304,7 @@ export const AdminDashboard = () => {
             title: "Draft Forms",
             value: adminAnalytics.draftFormsCount,
             hoverContent: (
-              <DefaultPopover
-                text="Number of forms saved as draft (not published)."
-              />
+              <DefaultPopover text="Number of forms saved as draft (not published)." />
             ),
           },
           {
@@ -317,16 +312,15 @@ export const AdminDashboard = () => {
             title: "Peak Activity Hours",
             value: adminAnalytics.peakActivityHours,
             hoverContent: (
-              <DefaultPopover
-                text="Busiest time range based on recent user activity (shown in IST)."
-              />
+              <DefaultPopover text="Busiest time range based on recent user activity (shown in IST)." />
             ),
           },
         ]}
-        onTimeFilterChange={(filter: TimeFilter) => {
-          // Only reload time-filtered stats (first 3 items)
-          // Admin analytics (last 3 items) remain static
-          loadStats(filter as ApiTimeFilter);
+        showTimePresets={true}
+        showDateRange={true}
+        onDateRangeChange={(range) => {
+          setStatsRange(range);
+          loadStats(range);
         }}
       />
       {/* Form Headers */}
@@ -649,7 +643,7 @@ export const AdminDashboard = () => {
                         ) : (
                           <Eye className="h-3 w-3" />
                         )}
-                        {form.status}
+                        {form.status.toUpperCase()}
                       </span>
                     </td>
                     <td className="px-6 py-4">

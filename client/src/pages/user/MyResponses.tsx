@@ -1,162 +1,119 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useDebouncedEffect } from "../../hooks/useDebounce";
 import { Link } from "react-router-dom";
 import { Eye, Pencil, FileText, Clock, CheckCircle } from "lucide-react";
 import {
+  getMyRespondedForms,
   getMyResponses,
-  getFormResponses,
 } from "../../services/response.service";
 import { useToast } from "../../components/ui/Toast";
 import {
   Card,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardContent,
   CardFooter,
 } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { PageLoader, Spinner } from "../../components/ui/Spinner";
 import { usePortalPath } from "../../hooks/usePortalPath";
-import { SearchFilterBar } from "../../components/ui/SearchFilterBar";
+import { SearchFilterBar } from "../../components/search-filter/SearchFilterBar";
 import { Pagination } from "../../components/ui/Pagination";
-import { type IForm } from "@poc-admin-form/shared";
+import { type IForm, ViewType } from "@poc-admin-form/shared";
+import { ViewToggle } from "../../components/ui/ViewToggle";
+import type { DateRange } from "../../utils/dateRange.utils";
 import {
   formatDateIST,
   formatDateTimeIST,
   formatTimeIST,
 } from "../../utils/helper.utils";
 
-// Form group from getMyResponses (without responses array)
-interface FormGroup {
-  _id: string; // Form ID
-  form: IForm;
-  latestActivity: string;
-  responseCount: number;
-}
-
 // Individual response structure
 interface ResponseItem {
   _id: string;
+  form: Pick<IForm, "_id" | "title" | "allowEditResponse">;
   answers: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }
 
-// Per-group pagination and responses state
-interface GroupResponseState {
-  responses: ResponseItem[];
-  currentPage: number;
-  totalPages: number;
-  loading: boolean;
-}
-
-const RESPONSES_PER_PAGE = 3;
+const RESPONSES_PER_PAGE = 12;
 
 export const MyResponses = () => {
-  const [formGroups, setFormGroups] = useState<FormGroup[]>([]);
+  const [responses, setResponses] = useState<ResponseItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [dateRange, setDateRange] = useState<DateRange>({});
+  const [selectedFormIds, setSelectedFormIds] = useState<string[]>([]);
 
-  // Top-level pagination for form groups
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  // Per-group responses state (keyed by formId)
-  const [groupResponses, setGroupResponses] = useState<
-    Record<string, GroupResponseState>
-  >({});
+  const [viewType, setViewType] = useState<ViewType>(() => {
+    return (
+      (localStorage.getItem(
+        import.meta.env.VITE_VIEW_PREFERENCE_KEY
+      ) as ViewType) || ViewType.LIST
+    );
+  });
+
+  const toggleView = (type: ViewType) => {
+    setViewType(type);
+    localStorage.setItem(import.meta.env.VITE_VIEW_PREFERENCE_KEY, type);
+  };
 
   const { addToast } = useToast();
   const { getPath } = usePortalPath();
 
-  // Load form groups (without responses)
-  const loadFormGroups = useCallback(
-    async (page = 1, search = "") => {
+  const loadResponses = useCallback(
+    async (page = 1, range?: DateRange) => {
       try {
         setLoading(true);
-        const response = await getMyResponses(page, 6, search);
-        setFormGroups(response.data);
+        const response = await getMyResponses(page, RESPONSES_PER_PAGE, {
+          range,
+          formIds: selectedFormIds,
+        });
+        setResponses(response.data);
         setTotalPages(response.pagination.pages);
         setCurrentPage(response.pagination.page);
         setTotalItems(response.pagination.total);
-        // Reset group responses when form groups change
-        setGroupResponses({});
       } catch {
         addToast("Failed to load responses", "error");
       } finally {
         setLoading(false);
       }
     },
-    [addToast]
+    [addToast, selectedFormIds]
   );
 
-  // Load responses for a specific form group
-  const loadGroupResponses = useCallback(
-    async (formId: string, page = 1) => {
-      // Set loading state for this group
-      setGroupResponses((prev) => ({
-        ...prev,
-        [formId]: {
-          ...prev[formId],
-          loading: true,
-          responses: prev[formId]?.responses || [],
-          currentPage: prev[formId]?.currentPage || 1,
-          totalPages: prev[formId]?.totalPages || 1,
-        },
-      }));
-
-      try {
-        const response = await getFormResponses(
-          formId,
-          page,
-          RESPONSES_PER_PAGE
-        );
-        setGroupResponses((prev) => ({
-          ...prev,
-          [formId]: {
-            responses: response.data,
-            currentPage: response.pagination.page,
-            totalPages: response.pagination.pages,
-            loading: false,
-          },
-        }));
-      } catch {
-        addToast("Failed to load responses for form", "error");
-        setGroupResponses((prev) => ({
-          ...prev,
-          [formId]: {
-            ...prev[formId],
-            loading: false,
-          },
-        }));
-      }
-    },
-    [addToast]
-  );
-
-  // Debounced search effect - triggers on search or page change
+  // Debounced fetch effect - triggers on filter or page change
   useDebouncedEffect(
     () => {
-      loadFormGroups(currentPage, searchQuery);
+      loadResponses(currentPage, dateRange);
     },
-    [currentPage, searchQuery, loadFormGroups],
+    [currentPage, dateRange, selectedFormIds, loadResponses],
     300
   );
 
-  // Load responses for each form group when groups change
-  useEffect(() => {
-    formGroups.forEach((group) => {
-      // Only load if not already loaded
-      if (!groupResponses[group._id]) {
-        loadGroupResponses(group._id, 1);
-      }
-    });
-  }, [formGroups, groupResponses, loadGroupResponses]);
+  const handleDateRangeChange = (range: DateRange) => {
+    setDateRange(range);
+    setCurrentPage(1);
+  };
 
-  const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
+  const loadRespondedForms = useCallback(async () => {
+    const response = await getMyRespondedForms();
+    const rows = (response?.data ?? []) as Array<{
+      formId: string;
+      title: string;
+    }>;
+    return rows
+      .filter((row) => row?.formId && row?.title)
+      .map((row) => ({ id: String(row.formId), label: String(row.title) }));
+  }, []);
+
+  const handleSelectedFormIdsChange = (ids: string[]) => {
+    setSelectedFormIds(ids);
     setCurrentPage(1);
   };
 
@@ -164,12 +121,7 @@ export const MyResponses = () => {
     setCurrentPage(page);
   };
 
-  // Handle per-group pagination
-  const handleGroupPageChange = (formId: string, page: number) => {
-    loadGroupResponses(formId, page);
-  };
-
-  if (loading && formGroups.length === 0) return <PageLoader />;
+  if (loading && responses.length === 0) return <PageLoader />;
 
   return (
     <div className="flex flex-col min-h-full space-y-8 animate-in fade-in duration-500">
@@ -184,16 +136,29 @@ export const MyResponses = () => {
             Manage your submissions across different forms.
           </p>
         </div>
+        <div className="mt-4 md:mt-0 pr-4">
+          <ViewToggle viewType={viewType} onToggle={toggleView} />
+        </div>
       </div>
-      {/* Search Bar */}
-      <div className="max-w-5xl">
+      {/* Time Filter */}
+      <div className="w-full">
         <SearchFilterBar
-          searchValue={searchQuery}
-          onSearchChange={handleSearchChange}
-          searchPlaceholder="Search by form title..."
+          dateRange={dateRange}
+          onDateRangeChange={handleDateRangeChange}
+          showTimePresets={true}
+          showDateRange={true}
+          showCheckboxMultiSelect={true}
+          checkboxMultiSelect={{
+            selectedIds: selectedFormIds,
+            onSelectedIdsChange: handleSelectedFormIdsChange,
+            loadOptions: loadRespondedForms,
+            triggerPlaceholder: "All forms",
+            triggerAriaLabel: "Filter responses by form",
+            searchPlaceholder: "Search responded forms...",
+          }}
         />
       </div>
-      {formGroups.length === 0 ? (
+      {responses.length === 0 ? (
         <Card className="border-dashed bg-muted/30">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <div className="bg-muted p-4 rounded-full mb-4">
@@ -201,11 +166,11 @@ export const MyResponses = () => {
             </div>
             <h3 className="text-xl font-semibold mb-2">No responses found</h3>
             <p className="text-muted-foreground mb-6 max-w-md">
-              {searchQuery
-                ? "Try adjusting your search terms."
+              {dateRange.startDate || dateRange.endDate
+                ? "No responses found in the selected time range."
                 : "You haven't submitted any forms yet."}
             </p>
-            {!searchQuery && (
+            {!dateRange.startDate && !dateRange.endDate && (
               <Link to={getPath("/forms")}>
                 <Button size="lg" className="gap-2">
                   Browse Available Forms
@@ -214,155 +179,198 @@ export const MyResponses = () => {
             )}
           </CardContent>
         </Card>
-      ) : (
-        <div className="space-y-10">
-          {formGroups.map((group) => {
-            const groupState = groupResponses[group._id];
-            const responses = groupState?.responses || [];
-            const groupCurrentPage = groupState?.currentPage || 1;
-            const groupTotalPages = groupState?.totalPages || 1;
-            const groupLoading = groupState?.loading ?? true;
+      ) : loading ? (
+        <div className="flex justify-center items-center py-12">
+          <Spinner />
+        </div>
+      ) : viewType === ViewType.GRID ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {responses.map((response) => (
+            <Card
+              key={response._id}
+              className="group hover:shadow-lg transition-all duration-300 border border-border/50 hover:border-primary/30"
+            >
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start gap-3">
+                  <CardTitle
+                    className="text-lg font-semibold leading-tight line-clamp-2 group-hover:text-primary transition-colors"
+                    title={response.form?.title}
+                  >
+                    {response.form?.title || "Form"}
+                  </CardTitle>
 
-            return (
-              <div key={group._id} className="space-y-4">
-                {/* Group Header with inline pagination */}
-                <div className="flex items-center justify-between border-b pb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <FileText className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-semibold text-foreground">
-                        {group.form.title}
-                      </h2>
-                      <p className="text-sm text-muted-foreground hidden sm:block">
-                        Last active: {formatDateTimeIST(group.latestActivity)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="px-3 py-1 bg-secondary text-secondary-foreground text-xs font-medium rounded-full">
-                      {group.responseCount} Response
-                      {group.responseCount !== 1 ? "s" : ""}
+                  <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0 max-w-40 sm:max-w-none truncate">
+                    <Clock className="h-3.5 w-3.5" />
+                    {formatDateTimeIST(response.updatedAt)}
+                  </span>
+                </div>
+              </CardHeader>
+              <CardContent className="pb-3">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="bg-muted/30 p-2 rounded flex flex-col items-center justify-center gap-1">
+                    <span className="text-xs text-muted-foreground">
+                      Answers
                     </span>
-                    {/* Compact inline pagination for responses within this group */}
-                    <Pagination
-                      currentPage={groupCurrentPage}
-                      totalPages={groupTotalPages}
-                      onPageChange={(page) =>
-                        handleGroupPageChange(group._id, page)
-                      }
-                      disabled={groupLoading}
-                      showPageInfo={false}
-                      className="border-0 pt-0 mt-0 gap-1"
-                    />
+                    <span className="font-bold flex items-center gap-1">
+                      <CheckCircle className="h-3 w-3 text-green-500" />
+                      {Object.keys(response.answers).length}
+                    </span>
+                  </div>
+                  <div className="bg-muted/30 p-2 rounded flex flex-col items-center justify-center gap-1">
+                    <span className="text-xs text-muted-foreground">
+                      Updated
+                    </span>
+                    <span className="font-semibold text-xs text-center">
+                      {response.updatedAt !== response.createdAt ? "Yes" : "No"}
+                    </span>
                   </div>
                 </div>
-
-                {/* Response Cards Grid */}
-                {groupLoading ? (
-                  <div className="flex justify-center items-center py-12">
-                    <Spinner />
-                  </div>
-                ) : responses.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No responses found for this form.
-                  </div>
+              </CardContent>
+              <CardFooter className="pt-3 border-t border-border/30 bg-muted/5 flex gap-2">
+                {response.form?.allowEditResponse ? (
+                  <Link
+                    to={getPath(`/my-responses/${response._id}/edit`)}
+                    className="flex-1"
+                  >
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="w-full gap-2 shadow-sm"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                      Edit
+                    </Button>
+                  </Link>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {responses.map((response) => (
-                      <Card
-                        key={response._id}
-                        className="group hover:shadow-lg transition-all duration-300 border border-border/50 hover:border-primary/30"
-                      >
-                        <CardHeader className="pb-3">
-                          <div className="flex justify-between items-start">
-                            <CardDescription className="text-xs font-medium uppercase tracking-wider text-primary">
-                              Submission
-                            </CardDescription>
-                          </div>
-                          <CardTitle className="text-base font-medium flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            {formatDateIST(response.createdAt)}
-                            <span className="text-muted-foreground font-normal text-sm">
-                              {formatTimeIST(response.createdAt, {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pb-3">
-                          <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div className="bg-muted/30 p-2 rounded flex flex-col items-center justify-center gap-1">
-                              <span className="text-xs text-muted-foreground">
-                                Answers
-                              </span>
-                              <span className="font-bold flex items-center gap-1">
-                                <CheckCircle className="h-3 w-3 text-green-500" />
-                                {Object.keys(response.answers).length}
-                              </span>
-                            </div>
-                            <div className="bg-muted/30 p-2 rounded flex flex-col items-center justify-center gap-1">
-                              <span className="text-xs text-muted-foreground">
-                                Updated
-                              </span>
-                              <span className="font-semibold text-xs text-center">
-                                {response.updatedAt !== response.createdAt
-                                  ? "Yes"
-                                  : "No"}
-                              </span>
-                            </div>
-                          </div>
-                        </CardContent>
-                        <CardFooter className="pt-3 border-t border-border/30 bg-muted/5 flex gap-2">
-                          {group.form.allowEditResponse ? (
-                            <Link
-                              to={getPath(`/my-responses/${response._id}/edit`)}
-                              className="flex-1"
-                            >
-                              <Button
-                                variant="default"
-                                size="sm"
-                                className="w-full gap-2 shadow-sm"
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                                Edit
-                              </Button>
-                            </Link>
-                          ) : (
-                            <Link
-                              to={getPath(`/my-responses/${response._id}/view`)}
-                              className="flex-1"
-                            >
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                className="w-full gap-2"
-                              >
-                                <Eye className="h-3.5 w-3.5" />
-                                View
-                              </Button>
-                            </Link>
-                          )}
-                        </CardFooter>
-                      </Card>
-                    ))}
-                  </div>
+                  <Link
+                    to={getPath(`/my-responses/${response._id}/view`)}
+                    className="flex-1"
+                  >
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="w-full gap-2"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      View
+                    </Button>
+                  </Link>
                 )}
-              </div>
-            );
-          })}
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-card border border-border/40 rounded-xl overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-muted/50 border-b border-border/40">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Form
+                  </th>
+                  <th className="px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Submitted
+                  </th>
+                  <th className="px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Answers
+                  </th>
+                  <th className="px-6 py-4 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Edited
+                  </th>
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/30">
+                {responses.map((response) => (
+                  <tr
+                    key={response._id}
+                    className="group hover:bg-muted/30 transition-colors"
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/5 rounded-md group-hover:bg-primary/10 transition-colors">
+                          <FileText className="h-4 w-4 text-primary/80" />
+                        </div>
+                        <div
+                          className="font-medium text-foreground group-hover:text-primary transition-colors truncate max-w-50"
+                          title={response.form?.title}
+                        >
+                          {response.form?.title || "Form"}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="text-sm text-muted-foreground">
+                        {formatDateIST(response.createdAt)}
+                        <span className="block text-xs">
+                          {formatTimeIST(response.createdAt, {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex items-center justify-center gap-1.5 text-sm">
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <span className="font-medium">
+                          {Object.keys(response.answers).length}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      {response.updatedAt !== response.createdAt ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+                          Yes
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full dark:bg-gray-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                          No
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      {response.form?.allowEditResponse ? (
+                        <Link
+                          to={getPath(`/my-responses/${response._id}/edit`)}
+                        >
+                          <Button size="sm" className="h-8 shadow-md gap-1.5">
+                            <Pencil className="h-3.5 w-3.5" />
+                            Edit
+                          </Button>
+                        </Link>
+                      ) : (
+                        <Link
+                          to={getPath(`/my-responses/${response._id}/view`)}
+                        >
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 gap-1.5"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                            View
+                          </Button>
+                        </Link>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
-      {/* Top-level Pagination Controls for Form Groups */}
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={handlePageChange}
         disabled={loading}
         totalItems={totalItems}
-        itemsPerPage={3}
+        itemsPerPage={RESPONSES_PER_PAGE}
       />
     </div>
   );

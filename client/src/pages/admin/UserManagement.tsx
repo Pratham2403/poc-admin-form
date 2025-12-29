@@ -7,7 +7,7 @@ import { useToast } from "../../components/ui/Toast";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
 import { PageLoader } from "../../components/ui/Spinner";
-import { SearchFilterBar } from "../../components/ui/SearchFilterBar";
+import { SearchFilterBar } from "../../components/search-filter/SearchFilterBar";
 import { Pagination } from "../../components/ui/Pagination";
 import { useAuth } from "../../contexts/AuthContext";
 import { formatDateIST } from "../../utils/helper.utils";
@@ -21,6 +21,9 @@ import {
   Building,
   Hash,
   Circle,
+  Eye,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 
 /**
@@ -365,20 +368,32 @@ export const UserManagement = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link to={`/admin/users/${user._id}`}>View</Link>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          asChild
+                          title="View user"
+                        >
+                          <Link to={`/admin/users/${user._id}`}>
+                            <Eye className="h-4 w-4" />
+                            <span className="sr-only">View</span>
+                          </Link>
                         </Button>
                         {canDeleteTargetUser(user) && (
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon-sm"
                             className="text-destructive hover:text-destructive"
                             disabled={deleteLoading === user._id}
                             onClick={() => handleDeleteUser(user)}
+                            title="Delete user"
                           >
-                            {deleteLoading === user._id
-                              ? "Deleting..."
-                              : "Delete"}
+                            {deleteLoading === user._id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                            <span className="sr-only">Delete</span>
                           </Button>
                         )}
                       </div>

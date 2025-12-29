@@ -44,11 +44,7 @@ export const verifyCSRFToken = (
   const requestMethod = req.method.toUpperCase();
 
   // Only verify on state-changing methods
-  // Skip CSRF check for refresh token endpoint which relies on its own HttpOnly cookie and might be called before CSRF token is established
-  if (
-    !["GET", "HEAD", "OPTIONS"].includes(requestMethod) &&
-    !req.originalUrl.includes("/auth/refresh")
-  ) {
+  if (!["GET", "HEAD", "OPTIONS"].includes(requestMethod)) {
     const cookieToken = req.cookies.csrf_token;
     const headerToken = req.headers["x-csrf-token"];
 

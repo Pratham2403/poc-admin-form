@@ -7,7 +7,7 @@ import SystemSettings from "../models/SystemSettings.model";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { asyncHandler } from "../utils/asyncHandler";
 import { AppError } from "../errors/AppError";
-import { formatHour, buildDateFilter } from "../utils/helper.utils";
+import { formatHour, buildDateRangeFilter } from "../utils/helper.utils";
 import { UserRole, FormStatus, UserStatus } from "@poc-admin-form/shared";
 import bcrypt from "bcryptjs";
 
@@ -371,17 +371,18 @@ export const deleteUser = asyncHandler(
 export const getUserSubmissionCount = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
-    const timeFilter = (req.query.timeFilter as string) || "all"; // today, month, all
+    const startDate = req.query.startDate as string | undefined;
+    const endDate = req.query.endDate as string | undefined;
 
     const userId = new mongoose.Types.ObjectId(id);
-    const dateFilter = buildDateFilter(timeFilter, "submittedAt");
+    const dateFilter = buildDateRangeFilter(startDate, endDate, "submittedAt");
 
     const count = await FormResponse.countDocuments({
       userId,
       ...dateFilter,
     });
 
-    res.json({ count, timeFilter });
+    res.json({ count, startDate, endDate });
   }
 );
 
@@ -399,9 +400,14 @@ export const getUserAnalytics = asyncHandler(
       );
     }
 
-    const timeFilter = (req.query.timeFilter as string) || "all"; // today, month, all
+    const startDate = req.query.startDate as string | undefined;
+    const endDate = req.query.endDate as string | undefined;
 
-    const submittedAtFilter = buildDateFilter(timeFilter, "submittedAt");
+    const submittedAtFilter = buildDateRangeFilter(
+      startDate,
+      endDate,
+      "submittedAt"
+    );
 
     const userObjectId = new mongoose.Types.ObjectId(id);
 
@@ -435,7 +441,8 @@ export const getUserAnalytics = asyncHandler(
       responseCount,
       formsRespondedTo: uniqueForms.length,
       totalSubmissions,
-      timeFilter,
+      startDate,
+      endDate,
     });
   }
 );

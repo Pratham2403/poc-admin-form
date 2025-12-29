@@ -1,8 +1,8 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IFormResponseDocument extends Document {
-  formId: string;
-  userId?: string;
+  formId: mongoose.Types.ObjectId;
+  userId?: mongoose.Types.ObjectId;
   answers: Record<string, any>;
   submittedAt: Date;
   updatedAt?: Date;

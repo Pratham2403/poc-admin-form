@@ -21,6 +21,12 @@ export const StatCard: React.FC<StatCardProps> = ({
   const [isHovered, setIsHovered] = useState(false);
   const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  React.useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
   const handleMouseEnter = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setIsHovered(true);
@@ -29,7 +35,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   const handleMouseLeave = () => {
     timeoutRef.current = setTimeout(() => {
       setIsHovered(false);
-    }, 300); // 300ms grace period
+    }, 100); // 100ms grace period
   };
 
   return (
@@ -48,9 +54,7 @@ export const StatCard: React.FC<StatCardProps> = ({
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-primary/10 rounded-lg">
-                {icon}
-              </div>
+              <div className="p-3 bg-primary/10 rounded-lg">{icon}</div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
                   {title}

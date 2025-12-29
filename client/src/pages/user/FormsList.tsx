@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { useDebouncedEffect } from "../../hooks/useDebounce";
 import { Link, useNavigate } from "react-router-dom";
 import { getForms } from "../../services/form.service";
-import { type IForm, ViewType } from "@poc-admin-form/shared";
+import { type IForm, UserRole, ViewType } from "@poc-admin-form/shared";
 import { useToast } from "../../components/ui/Toast";
 import { Button } from "../../components/ui/Button";
 import {
@@ -15,9 +15,10 @@ import {
 } from "../../components/ui/Card";
 import { PageLoader } from "../../components/ui/Spinner";
 import { usePortalPath } from "../../hooks/usePortalPath";
-import { SearchFilterBar } from "../../components/ui/SearchFilterBar";
+import { SearchFilterBar } from "../../components/search-filter/SearchFilterBar";
 import { ViewToggle } from "../../components/ui/ViewToggle";
 import { Pagination } from "../../components/ui/Pagination";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   ClipboardList,
   CheckCircle,
@@ -29,6 +30,7 @@ import {
 
 export const FormsList = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [forms, setForms] = useState<IForm[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -53,6 +55,12 @@ export const FormsList = () => {
 
   const { addToast } = useToast();
   const { getPath } = usePortalPath();
+
+  const isAdminUser =
+    user?.role === UserRole.ADMIN || user?.role === UserRole.SUPERADMIN;
+
+  const getFormTargetPath = (formId: string) =>
+    isAdminUser ? `/admin/edit/${formId}` : getPath(`/forms/${formId}`);
 
   const loadForms = useCallback(
     async (page = 1, search = "") => {
@@ -181,7 +189,7 @@ export const FormsList = () => {
               key={form._id}
               className="hover:shadow-xl transition-all duration-300 border border-border/60 hover:border-primary/50 flex flex-col group bg-card hover:bg-card/80"
             >
-              <Link to={getPath(`/forms/${form._id}`)} className="block">
+              <Link to={getFormTargetPath(String(form._id))} className="block">
                 <CardHeader className="space-y-3 pb-1 cursor-pointer">
                   <div className="flex justify-between items-start gap-4">
                     <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
@@ -220,7 +228,10 @@ export const FormsList = () => {
                 </div>
               </CardContent>
               <CardFooter className="pt-4 border-t border-border/40 bg-muted/5">
-                <Link to={getPath(`/forms/${form._id}`)} className="w-full">
+                <Link
+                  to={getFormTargetPath(String(form._id))}
+                  className="w-full"
+                >
                   <Button
                     className="w-full shadow-md hover:shadow-lg transition-all gap-2"
                     variant={form.responded ? "outline" : "default"}
@@ -258,7 +269,9 @@ export const FormsList = () => {
                 {filteredForms.map((form) => (
                   <tr
                     key={form._id}
-                    onClick={() => navigate(getPath(`/forms/${form._id}`))}
+                    onClick={() =>
+                      navigate(getFormTargetPath(String(form._id)))
+                    }
                     className="group hover:bg-muted/30 transition-colors cursor-pointer"
                   >
                     <td className="px-6 py-4">
@@ -299,7 +312,7 @@ export const FormsList = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <Link
-                        to={getPath(`/forms/${form._id}`)}
+                        to={getFormTargetPath(String(form._id))}
                         onClick={(e) => e.stopPropagation()}
                       >
                         <Button

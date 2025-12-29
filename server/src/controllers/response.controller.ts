@@ -7,7 +7,7 @@ import { AuthRequest } from "../middlewares/auth.middleware.ts";
 import { FormStatus, QuestionType } from "@poc-admin-form/shared";
 import { asyncHandler } from "../utils/asyncHandler.ts";
 import { AppError } from "../errors/AppError.ts";
-import { buildDateFilter } from "../utils/helper.utils.ts";
+import { buildDateRangeFilter } from "../utils/helper.utils.ts";
 
 /**
  * Submit a response to a form
@@ -159,75 +159,76 @@ export const updateResponse = asyncHandler(
 );
 
 /**
- * Get all form groups for the current user (without responses array)
- * Returns form metadata and response count for each form the user has responded to
+ * Get paginated responses for the current user
  */
 export const getMyResponses = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const userId = req.user!.userId;
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
-    const search = (req.query.search as string) || "";
+    const startDate = req.query.startDate as string | undefined;
+    const endDate = req.query.endDate as string | undefined;
+    const formIdsRaw = req.query.formIds as string | string[] | undefined;
     const skip = (page - 1) * limit;
 
-    const pipeline: any[] = [
-      // 1. Match responses by user
-      { $match: { userId: new mongoose.Types.ObjectId(userId) } },
+    const dateFilter = buildDateRangeFilter(startDate, endDate, "submittedAt");
 
-      // 2. Lookup Form details
+    const parsedFormIds = Array.isArray(formIdsRaw)
+      ? formIdsRaw
+      : typeof formIdsRaw === "string"
+      ? formIdsRaw.split(",")
+      : [];
+
+    const formObjectIds = parsedFormIds
+      .map((id) => id.trim())
+      .filter(Boolean)
+      .map((id) => {
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+          throw AppError.badRequest("Invalid formIds filter");
+        }
+        return new mongoose.Types.ObjectId(id);
+      });
+
+    const pipeline: mongoose.PipelineStage[] = [
       {
-        $lookup: {
-          from: "forms",
-          localField: "formId",
-          foreignField: "_id",
-          as: "form",
+        $match: {
+          userId: new mongoose.Types.ObjectId(userId),
+          ...dateFilter,
+          ...(formObjectIds.length > 0
+            ? { formId: { $in: formObjectIds } }
+            : {}),
         },
       },
-      { $unwind: "$form" },
-
-      // 3. Search Filter (if provided)
-      ...(search
-        ? [
-            {
-              $match: {
-                "form.title": { $regex: search, $options: "i" },
-              },
-            },
-          ]
-        : []),
-
-      // 4. Group by Form (no responses array - fetched separately via getFormResponses)
-      {
-        $group: {
-          _id: "$form._id",
-          form: { $first: "$form" },
-          latestActivity: { $max: "$updatedAt" },
-          responseCount: { $sum: 1 },
-        },
-      },
-
-      // 5. Sort Groups by latest activity
-      { $sort: { latestActivity: -1 } },
-
-      // 6. Project clean structure
-      {
-        $project: {
-          _id: 1,
-          form: {
-            _id: 1,
-            title: 1,
-            status: 1,
-            allowEditResponse: 1,
-          },
-          latestActivity: 1,
-          responseCount: 1,
-        },
-      },
-
-      // 7. Facet for Pagination and Total Count
+      { $sort: { updatedAt: -1 } },
       {
         $facet: {
-          data: [{ $skip: skip }, { $limit: limit }],
+          data: [
+            { $skip: skip },
+            { $limit: limit },
+            {
+              $lookup: {
+                from: "forms",
+                localField: "formId",
+                foreignField: "_id",
+                as: "form",
+              },
+            },
+            { $unwind: "$form" },
+            {
+              $project: {
+                _id: 1,
+                answers: 1,
+                createdAt: 1,
+                updatedAt: 1,
+                submittedAt: 1,
+                form: {
+                  _id: 1,
+                  title: 1,
+                  allowEditResponse: 1,
+                },
+              },
+            },
+          ],
           totalCount: [{ $count: "count" }],
         },
       },
@@ -235,8 +236,8 @@ export const getMyResponses = asyncHandler(
 
     const result = await FormResponse.aggregate(pipeline);
 
-    const data = result[0].data;
-    const total = result[0].totalCount[0] ? result[0].totalCount[0].count : 0;
+    const data = result[0]?.data ?? [];
+    const total = result[0]?.totalCount?.[0]?.count ?? 0;
 
     res.json({
       data,
@@ -246,51 +247,56 @@ export const getMyResponses = asyncHandler(
         limit,
         pages: Math.ceil(total / limit),
       },
+      startDate,
+      endDate,
     });
   }
 );
 
 /**
- * Get paginated responses for a specific form by the current user
+ * Get distinct forms the current user has responded to (for filter UI)
  */
-export const getFormResponses = asyncHandler(
+export const getMyRespondedForms = asyncHandler(
   async (req: AuthRequest, res: Response) => {
-    const { formId } = req.params;
-    const userId = new mongoose.Types.ObjectId(req.user!.userId);
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 3;
-    const skip = (page - 1) * limit;
+    const userId = req.user!.userId;
 
-    // Validate formId
-    if (!mongoose.Types.ObjectId.isValid(formId)) {
-      throw AppError.badRequest("Invalid form ID");
-    }
-
-    const formObjectId = new mongoose.Types.ObjectId(formId);
-
-    // Build query filter - using 'as any' to handle ObjectId type mismatch with interface
-    const queryFilter = { formId: formObjectId, userId } as any;
-
-    // Get paginated responses and total count in parallel
-    const [responses, total] = await Promise.all([
-      FormResponse.find(queryFilter)
-        .select("_id answers createdAt updatedAt")
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      FormResponse.countDocuments(queryFilter),
-    ]);
-
-    res.json({
-      data: responses,
-      pagination: {
-        total,
-        page,
-        limit,
-        pages: Math.ceil(total / limit),
+    const pipeline: mongoose.PipelineStage[] = [
+      {
+        $match: {
+          userId: new mongoose.Types.ObjectId(userId),
+        },
       },
-    });
+      {
+        $group: {
+          _id: "$formId",
+        },
+      },
+      {
+        $lookup: {
+          from: "forms",
+          localField: "_id",
+          foreignField: "_id",
+          as: "form",
+        },
+      },
+      {
+        $unwind: {
+          path: "$form",
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          formId: "$_id",
+          title: "$form.title",
+        },
+      },
+      { $sort: { title: 1 } },
+    ];
+
+    const data = await FormResponse.aggregate(pipeline);
+    res.json({ data });
   }
 );
 
@@ -321,15 +327,15 @@ export const getResponseById = asyncHandler(
 export const getMySubmissionCount = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const userId = new mongoose.Types.ObjectId(req.user!.userId);
-    const timeFilter = (req.query.timeFilter as string) || "all"; // today, month, all
-
-    const dateFilter = buildDateFilter(timeFilter, "submittedAt");
+    const startDate = req.query.startDate as string | undefined;
+    const endDate = req.query.endDate as string | undefined;
+    const dateFilter = buildDateRangeFilter(startDate, endDate, "submittedAt");
 
     const count = await FormResponse.countDocuments({
       userId: userId,
       ...dateFilter,
     });
 
-    res.json({ count, timeFilter });
+    res.json({ count, startDate, endDate });
   }
 );

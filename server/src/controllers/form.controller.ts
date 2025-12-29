@@ -5,7 +5,7 @@ import { AuthRequest } from "../middlewares/auth.middleware.ts";
 import { FormStatus } from "@poc-admin-form/shared";
 import { asyncHandler } from "../utils/asyncHandler.ts";
 import { AppError } from "../errors/AppError.ts";
-import { buildDateFilter } from "../utils/helper.utils.ts";
+import { buildDateRangeFilter } from "../utils/helper.utils.ts";
 /**
  * Create a new form
  */
@@ -209,8 +209,9 @@ export const deleteForm = asyncHandler(
  */
 export const getFormStats = asyncHandler(
   async (req: AuthRequest, res: Response) => {
-    const timeFilter = (req.query.timeFilter as string) || "all";
-    const dateFilter = buildDateFilter(timeFilter);
+    const startDate = req.query.startDate as string | undefined;
+    const endDate = req.query.endDate as string | undefined;
+    const dateFilter = buildDateRangeFilter(startDate, endDate);
 
     // Exclude deleted forms from stats
     const baseFilter = {
@@ -233,7 +234,8 @@ export const getFormStats = asyncHandler(
       totalForms,
       publishedForms,
       totalResponses: responseAggregation[0]?.total || 0,
-      timeFilter,
+      startDate,
+      endDate,
     });
   }
 );

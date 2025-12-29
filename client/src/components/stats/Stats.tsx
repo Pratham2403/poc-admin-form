@@ -1,10 +1,10 @@
 import * as React from "react";
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { StatCard } from "./StatCard";
-import { Button } from "../ui/Button";
 import { cn } from "../../lib/utils";
+import { SearchFilterBar } from "../search-filter/SearchFilterBar";
 
-export type TimeFilter = "today" | "month" | "all";
+import { type DateRange, type TimePreset } from "../../utils/dateRange.utils";
 
 interface StatItem {
   icon: ReactNode;
@@ -15,53 +15,39 @@ interface StatItem {
 
 interface StatsProps {
   stats: StatItem[];
-  onTimeFilterChange?: (filter: TimeFilter) => void;
+  dateRange?: DateRange;
+  onDateRangeChange?: (range: DateRange) => void;
+  showTimePresets?: boolean;
+  showDateRange?: boolean;
   className?: string;
 }
 
 export const Stats: React.FC<StatsProps> = ({
   stats,
-  onTimeFilterChange,
+  dateRange,
+  onDateRangeChange,
+  showTimePresets = true,
+  showDateRange = false,
   className,
 }) => {
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
-
-  const handleTimeFilterChange = (filter: TimeFilter) => {
-    setTimeFilter(filter);
-    onTimeFilterChange?.(filter);
-  };
+  const canFilter = !!onDateRangeChange;
 
   return (
     <div className={cn("space-y-4", className)}>
-      {/* Time Filter Buttons */}
-      {onTimeFilterChange && (
-        <div className="flex items-center gap-2">
-          <Button
-            variant={timeFilter === "today" ? "default" : "outline"}
-            size="sm"
-            onClick={() => handleTimeFilterChange("today")}
-          >
-            Today
-          </Button>
-          <Button
-            variant={timeFilter === "month" ? "default" : "outline"}
-            size="sm"
-            onClick={() => handleTimeFilterChange("month")}
-          >
-            This Month
-          </Button>
-          <Button
-            variant={timeFilter === "all" ? "default" : "outline"}
-            size="sm"
-            onClick={() => handleTimeFilterChange("all")}
-          >
-            All Time
-          </Button>
-        </div>
+      {/* Filters are composed via SearchFilterBar (SRP/SOLID) */}
+      {canFilter && (showTimePresets || showDateRange) && (
+        <SearchFilterBar
+          className="mb-0"
+          dateRange={dateRange}
+          onDateRangeChange={onDateRangeChange}
+          showTimePresets={showTimePresets}
+          showDateRange={showDateRange}
+          presets={["today", "month", "all"] satisfies TimePreset[]}
+        />
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-6 gap-4 mt-6">
         {stats.map((stat, index) => (
           <StatCard
             key={index}
