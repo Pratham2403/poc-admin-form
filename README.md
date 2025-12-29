@@ -78,11 +78,11 @@ A production-ready full-stack form management platform with role-based access co
 ### Backend
 
 - Node.js 18+
-- Express 5.2.1
+- Express 4.21.2
 - TypeScript 5.9.3
-- Mongoose 9.0.0
-- Winston 3.19.0 (logging)
-- Google APIs 167.0.0
+- Mongoose 8.9.3
+- Winston 3.17.0 (logging)
+- Google APIs 144.0.0
 
 ### Infrastructure
 
@@ -136,9 +136,6 @@ cd client && npm run dev       # Start frontend (port 3000)
 # Production build
 cd server && npm run build     # Compile TypeScript
 cd client && npm run build     # Build static assets
-
-# Database seeding
-cd server && npm run seed:admin # Create default admin user
 ```
 
 ---
@@ -473,9 +470,6 @@ Breaking changes to API endpoints will be versioned via URL path (`/api/v2/...`)
 ### Useful Commands
 
 ```bash
-# Database
-cd server && npm run seed:admin
-
 # Development
 cd server && npm run dev
 cd client && npm run dev
@@ -518,13 +512,10 @@ cd client && npx tsc --noEmit
 
 ### Default Admin Credentials
 
-After running `npm run seed:admin`:
+User accounts are created through the user management API (`POST /api/users`). Set up your first admin user by making a direct database insert or through the registration endpoint with appropriate role assignment.
 
-- **Email**: `admin@example.com`
-- **Password**: `<ADMIN_PASSWORD>` (from `.env`)
-
-⚠️ **Change these credentials in production!**
+⚠️ **In production, change default credentials immediately!**
 
 ---
 
-**Last Updated**: December 21, 2025
+**Last Updated**: December 29, 2025
