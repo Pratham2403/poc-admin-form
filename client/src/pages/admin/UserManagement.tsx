@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { getUsers } from "../../services/user.service";
+import { deleteUser, getUsers } from "../../services/user.service";
 import { getSettings } from "../../services/systemSettings.service";
 import { type IUser, UserRole } from "@poc-admin-form/shared";
 import { useToast } from "../../components/ui/Toast";
@@ -10,6 +10,7 @@ import { PageLoader } from "../../components/ui/Spinner";
 import { SearchFilterBar } from "../../components/ui/SearchFilterBar";
 import { Pagination } from "../../components/ui/Pagination";
 import { useAuth } from "../../contexts/AuthContext";
+import { formatDateIST } from "../../utils/helper.utils";
 import {
   Users,
   Plus,
@@ -57,13 +58,14 @@ const formatLastActive = (
   if (diffDays < 7)
     return { text: `${diffDays} day${diffDays > 1 ? "s" : ""} ago`, isOnline };
 
-  return { text: date.toLocaleDateString(), isOnline: false };
+  return { text: formatDateIST(date), isOnline: false };
 };
 
 export const UserManagement = () => {
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<IUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -132,6 +134,50 @@ export const UserManagement = () => {
     currentUser?.role === UserRole.SUPERADMIN ||
     (currentUser?.role === UserRole.ADMIN &&
       currentUser?.modulePermissions?.users);
+
+  const canDeleteTargetUser = (targetUser: IUser) => {
+    if (!currentUser) return false;
+
+    if (currentUser.role === UserRole.SUPERADMIN) {
+      return targetUser.role !== UserRole.SUPERADMIN;
+    }
+
+    if (currentUser.role === UserRole.ADMIN) {
+      return (
+        !!currentUser.modulePermissions?.users &&
+        targetUser.role === UserRole.USER
+      );
+    }
+
+    return false;
+  };
+
+  const handleDeleteUser = async (targetUser: IUser) => {
+    if (!targetUser._id) return;
+
+    if (!canDeleteTargetUser(targetUser)) {
+      addToast("You don't have permission to delete this user", "error");
+      return;
+    }
+
+    const ok = window.confirm(
+      `Delete user ${
+        targetUser.name || targetUser.email
+      }? This will disable their access.`
+    );
+    if (!ok) return;
+
+    try {
+      setDeleteLoading(targetUser._id);
+      await deleteUser(targetUser._id);
+      addToast("User deleted successfully", "success");
+      await loadUsers(currentPage, searchQuery);
+    } catch {
+      addToast("Failed to delete user", "error");
+    } finally {
+      setDeleteLoading(null);
+    }
+  };
 
   if (loading && users.length === 0) return <PageLoader />;
 
@@ -318,9 +364,24 @@ export const UserManagement = () => {
                       })()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link to={`/admin/users/${user._id}`}>View</Link>
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link to={`/admin/users/${user._id}`}>View</Link>
+                        </Button>
+                        {canDeleteTargetUser(user) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            disabled={deleteLoading === user._id}
+                            onClick={() => handleDeleteUser(user)}
+                          >
+                            {deleteLoading === user._id
+                              ? "Deleting..."
+                              : "Delete"}
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

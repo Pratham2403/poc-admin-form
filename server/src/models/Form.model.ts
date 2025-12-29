@@ -1,38 +1,48 @@
-import mongoose, { Schema, Document } from 'mongoose';
-import { IForm, FormStatus, QuestionType } from '@poc-admin-form/shared';
+import mongoose, { Schema, Document } from "mongoose";
+import { IForm, FormStatus, QuestionType } from "@poc-admin-form/shared";
 
-export interface IFormDocument extends Omit<IForm, '_id'>, Document { }
+export interface IFormDocument extends Omit<IForm, "_id">, Document {}
 
 const ValidationRuleSchema = new Schema({
-    type: { type: String, required: true },
-    value: { type: Schema.Types.Mixed },
-    message: { type: String }
+  type: { type: String, required: true },
+  value: { type: Schema.Types.Mixed },
+  message: { type: String },
 });
 
 const QuestionSchema = new Schema({
-    id: { type: String, required: true },
-    title: { type: String, required: true },
-    description: { type: String },
-    type: { type: String, enum: Object.values(QuestionType), required: true },
-    required: { type: Boolean, default: false },
-    options: [{ type: String }],
-    validationRules: [ValidationRuleSchema],
-    minLabel: { type: String },
-    maxLabel: { type: String },
-    minValue: { type: Number },
-    maxValue: { type: Number }
+  id: { type: String, required: true },
+  title: { type: String, required: true },
+  description: { type: String },
+  type: { type: String, enum: Object.values(QuestionType), required: true },
+  required: { type: Boolean, default: false },
+  options: [{ type: String }],
+  validationRules: [ValidationRuleSchema],
+  minLabel: { type: String },
+  maxLabel: { type: String },
+  minValue: { type: Number },
+  maxValue: { type: Number },
 });
 
-const FormSchema: Schema = new Schema({
+const FormSchema: Schema = new Schema(
+  {
     title: { type: String, required: true },
     description: { type: String },
     questions: [QuestionSchema],
-    status: { type: String, enum: Object.values(FormStatus), default: FormStatus.DRAFT },
+    status: {
+      type: String,
+      enum: Object.values(FormStatus),
+      default: FormStatus.DRAFT,
+    },
     googleSheetUrl: { required: true, type: String },
     allowEditResponse: { type: Boolean, default: false },
     redirectionLink: { type: String },
-    createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    responseCount: { type: Number, default: 0 }
-}, { timestamps: true });
+    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    responseCount: { type: Number, default: 0 },
+  },
+  { timestamps: true }
+);
 
-export default mongoose.model<IFormDocument>('Form', FormSchema);
+FormSchema.index({ status: 1, createdAt: -1 });
+FormSchema.index({ createdBy: 1, status: 1, createdAt: -1 });
+
+export default mongoose.model<IFormDocument>("Form", FormSchema);

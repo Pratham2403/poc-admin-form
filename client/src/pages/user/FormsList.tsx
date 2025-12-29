@@ -42,7 +42,7 @@ export const FormsList = () => {
     return (
       (localStorage.getItem(
         import.meta.env.VITE_VIEW_PREFERENCE_KEY
-      ) as ViewType) || ViewType.GRID
+      ) as ViewType) || ViewType.LIST
     );
   });
 

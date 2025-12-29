@@ -9,7 +9,7 @@ import {
 import { asyncHandler } from "../utils/asyncHandler.ts";
 import { AppError } from "../errors/AppError.ts";
 import { AuthRequest } from "../middlewares/auth.middleware.ts";
-import { UserRole } from "@poc-admin-form/shared";
+import { UserRole, UserStatus } from "@poc-admin-form/shared";
 
 /**
  * Register a new user
@@ -88,7 +88,7 @@ export const register = asyncHandler(
  */
 export const login = asyncHandler(async (req: Request, res: Response) => {
   const { email, password } = req.body;
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email, status: UserStatus.ACTIVE });
 
   if (
     user &&
@@ -166,8 +166,8 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
   const decoded = verifyRefreshToken(refreshToken) as any;
 
   // Update lastHeartbeat on token refresh (user activity)
-  const user = await User.findByIdAndUpdate(
-    decoded.userId,
+  const user = await User.findOneAndUpdate(
+    { _id: decoded.userId, status: UserStatus.ACTIVE },
     { lastHeartbeat: new Date() },
     { new: true }
   );
@@ -186,16 +186,6 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
     sameSite: "lax",
     path: "/",
     maxAge: 15 * 60 * 1000, // 15 minutes
-  });
-
-  // Replace the old refresh token with the new one so that the user can't use the old refresh token to get a new access token
-  // This is a security measure to prevent the user from using the old refresh token to get a new access token
-  res.cookie("refresh_token", newRefreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 
   res.json({

@@ -31,6 +31,8 @@ import { ViewToggle } from "../../components/ui/ViewToggle";
 import { Pagination } from "../../components/ui/Pagination";
 import { ViewType } from "@poc-admin-form/shared";
 import { Stats, type TimeFilter } from "../../components/stats/Stats";
+import { DefaultPopover } from "../../components/stats/DefaultPopover";
+import { formatDateIST } from "../../utils/helper.utils";
 import {
   ClipboardList,
   FileText,
@@ -68,7 +70,7 @@ export const AdminDashboard = () => {
     return (
       (localStorage.getItem(
         import.meta.env.VITE_VIEW_PREFERENCE_KEY
-      ) as ViewType) || ViewType.GRID
+      ) as ViewType) || ViewType.LIST
     );
   });
 
@@ -264,31 +266,61 @@ export const AdminDashboard = () => {
             icon: <FileText className="h-6 w-6 text-primary" />,
             title: "Total Forms",
             value: stats.totalForms,
+            hoverContent: (
+              <DefaultPopover
+                text="Total number of forms created in the selected time range."
+              />
+            ),
           },
           {
             icon: <Globe className="h-6 w-6 text-green-500" />,
             title: "Published Forms",
             value: stats.publishedForms,
+            hoverContent: (
+              <DefaultPopover
+                text="Number of forms that are currently published within the selected time range."
+              />
+            ),
           },
           {
             icon: <BarChart3 className="h-6 w-6 text-blue-500" />,
             title: "Total Responses",
             value: stats.totalResponses,
+            hoverContent: (
+              <DefaultPopover
+                text="Total responses received across your forms in the selected time range."
+              />
+            ),
           },
           {
             icon: <Users className="h-6 w-6 text-emerald-500" />,
             title: "Currently Active Users",
             value: adminAnalytics.activeUsersCount,
+            hoverContent: (
+              <DefaultPopover
+                text={`Users who have checked in within the last ${adminAnalytics.heartbeatWindowHours} hour(s).`}
+              />
+            ),
           },
           {
             icon: <FileClock className="h-6 w-6 text-orange-500" />,
             title: "Draft Forms",
             value: adminAnalytics.draftFormsCount,
+            hoverContent: (
+              <DefaultPopover
+                text="Number of forms saved as draft (not published)."
+              />
+            ),
           },
           {
             icon: <TrendingUp className="h-6 w-6 text-rose-500" />,
             title: "Peak Activity Hours",
             value: adminAnalytics.peakActivityHours,
+            hoverContent: (
+              <DefaultPopover
+                text="Busiest time range based on recent user activity (shown in IST)."
+              />
+            ),
           },
         ]}
         onTimeFilterChange={(filter: TimeFilter) => {
@@ -487,9 +519,7 @@ export const AdminDashboard = () => {
                 <p className="text-xs text-muted-foreground mt-4 flex items-center gap-1">
                   <Clock className="h-3 w-3" />
                   Created{" "}
-                  {new Date(form.createdAt!).toLocaleDateString(undefined, {
-                    dateStyle: "medium",
-                  })}
+                  {formatDateIST(form.createdAt!, { dateStyle: "medium" })}
                 </p>
               </CardContent>
               <CardFooter className="flex flex-wrap gap-2 pt-3 border-t border-border/40 bg-muted/5">
@@ -645,9 +675,7 @@ export const AdminDashboard = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-center text-sm text-muted-foreground">
-                      {new Date(form.createdAt!).toLocaleDateString(undefined, {
-                        dateStyle: "medium",
-                      })}
+                      {formatDateIST(form.createdAt!, { dateStyle: "medium" })}
                     </td>
                     <td className="px-6 py-4 text-right">
                       {hasFormsPermission ? (

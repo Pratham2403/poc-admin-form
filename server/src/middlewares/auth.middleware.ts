@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyAccessToken } from "../utils/jwt.utils.ts";
 import { AppError } from "../errors/AppError.ts";
-import { UserRole } from "@poc-admin-form/shared";
+import { UserRole, UserStatus } from "@poc-admin-form/shared";
+import User from "../models/User.model.ts";
 
 export interface AuthRequest extends Request {
   user?: {
@@ -11,7 +12,7 @@ export interface AuthRequest extends Request {
   };
 }
 
-export const authenticate = (
+export const authenticate = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -25,6 +26,14 @@ export const authenticate = (
   try {
     const decoded = verifyAccessToken(token);
     req.user = decoded as AuthRequest["user"];
+
+    const isActive = await User.exists({
+      _id: req.user?.userId,
+      status: UserStatus.ACTIVE,
+    });
+    if (!isActive) {
+      return next(AppError.unauthorized("Not authorized"));
+    }
     next();
   } catch (error) {
     next(AppError.unauthorized("Not authorized, token failed"));

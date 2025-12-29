@@ -48,7 +48,11 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [newlyAddedId, setNewlyAddedId] = useState<string | null>(null);
+  const [openTypeDropdownQuestionId, setOpenTypeDropdownQuestionId] = useState<
+    string | null
+  >(null);
   const questionRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const typeDropdownRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   // Update state if initialData changes (e.g. when loading an existing form for editing)
   useEffect(() => {
@@ -103,8 +107,33 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
   };
 
   const removeQuestion = (id: string) => {
+    if (openTypeDropdownQuestionId === id) {
+      setOpenTypeDropdownQuestionId(null);
+    }
     setQuestions(questions.filter((q) => q.id !== id));
   };
+
+  // Single outside-click handler for the currently open type dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!openTypeDropdownQuestionId) return;
+      const dropdownEl = typeDropdownRefs.current.get(
+        openTypeDropdownQuestionId
+      );
+      if (!dropdownEl) {
+        setOpenTypeDropdownQuestionId(null);
+        return;
+      }
+      if (!dropdownEl.contains(event.target as Node)) {
+        setOpenTypeDropdownQuestionId(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [openTypeDropdownQuestionId]);
 
   const addOption = (questionId: string) => {
     setQuestions(
@@ -413,6 +442,22 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
                     updateOption={updateOption}
                     removeOption={removeOption}
                     hasOptions={hasOptions}
+                    isTypeDropdownOpen={openTypeDropdownQuestionId === q.id}
+                    onToggleTypeDropdown={() =>
+                      setOpenTypeDropdownQuestionId((prev) =>
+                        prev === q.id ? null : q.id
+                      )
+                    }
+                    onCloseTypeDropdown={() =>
+                      setOpenTypeDropdownQuestionId(null)
+                    }
+                    setTypeDropdownRef={(el) => {
+                      if (el) {
+                        typeDropdownRefs.current.set(q.id, el);
+                      } else {
+                        typeDropdownRefs.current.delete(q.id);
+                      }
+                    }}
                   />
                 </div>
 

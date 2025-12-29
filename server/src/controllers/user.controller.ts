@@ -8,7 +8,7 @@ import { AuthRequest } from "../middlewares/auth.middleware";
 import { asyncHandler } from "../utils/asyncHandler";
 import { AppError } from "../errors/AppError";
 import { formatHour, buildDateFilter } from "../utils/helper.utils";
-import { UserRole, FormStatus } from "@poc-admin-form/shared";
+import { UserRole, FormStatus, UserStatus } from "@poc-admin-form/shared";
 import bcrypt from "bcryptjs";
 
 /**
@@ -21,15 +21,20 @@ export const getUsers = asyncHandler(
     const search = (req.query.search as string) || "";
     const skip = (page - 1) * limit;
 
-    let query: any = {};
+    let query: any = { status: UserStatus.ACTIVE };
 
     if (search) {
       query = {
-        $or: [
-          { email: { $regex: search, $options: "i" } },
-          { name: { $regex: search, $options: "i" } },
-          { employeeId: { $regex: search, $options: "i" } },
-          { vendorId: { $regex: search, $options: "i" } },
+        $and: [
+          { status: UserStatus.ACTIVE },
+          {
+            $or: [
+              { email: { $regex: search, $options: "i" } },
+              { name: { $regex: search, $options: "i" } },
+              { employeeId: { $regex: search, $options: "i" } },
+              { vendorId: { $regex: search, $options: "i" } },
+            ],
+          },
         ],
       };
     }
@@ -39,7 +44,8 @@ export const getUsers = asyncHandler(
         .select("-password")
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(limit),
+        .limit(limit)
+        .lean(),
       User.countDocuments(query),
     ]);
 
@@ -61,7 +67,9 @@ export const getUsers = asyncHandler(
 export const getUserById = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
-    const user = await User.findById(id).select("-password");
+    const user = await User.findOne({ _id: id, status: UserStatus.ACTIVE })
+      .select("-password")
+      .lean();
 
     if (!user) {
       throw AppError.notFound("User not found");
@@ -182,6 +190,10 @@ export const updateUser = asyncHandler(
       throw AppError.notFound("User not found");
     }
 
+    if (user.status === UserStatus.DELETED) {
+      throw AppError.notFound("User not found");
+    }
+
     // RULE 1: SuperAdmin cannot edit another SuperAdmin
     if (
       user.role === UserRole.SUPERADMIN &&
@@ -298,6 +310,10 @@ export const updateUserProfile = asyncHandler(
       throw AppError.notFound("User not found");
     }
 
+    if (user.status === UserStatus.DELETED) {
+      throw AppError.notFound("User not found");
+    }
+
     if (address !== undefined) user.address = address;
     if (city !== undefined) user.city = city;
 
@@ -311,6 +327,45 @@ export const updateUserProfile = asyncHandler(
 );
 
 /**
+ * Soft delete user (sets status=deleted)
+ * RBAC:
+ * - SUPERADMIN cannot delete another SUPERADMIN
+ * - ADMIN cannot delete ADMIN/SUPERADMIN
+ */
+export const deleteUser = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    const currentUser = req.user;
+
+    if (!currentUser) {
+      throw AppError.unauthorized("Not authorized");
+    }
+
+    const user = await User.findById(id);
+    if (!user || user.status === UserStatus.DELETED) {
+      throw AppError.notFound("User not found");
+    }
+
+    if (currentUser.role === UserRole.SUPERADMIN) {
+      if (user.role === UserRole.SUPERADMIN) {
+        throw AppError.forbidden("SuperAdmin cannot delete another SuperAdmin");
+      }
+    } else if (currentUser.role === UserRole.ADMIN) {
+      if (user.role === UserRole.ADMIN || user.role === UserRole.SUPERADMIN) {
+        throw AppError.forbidden("Admin cannot delete Admins or SuperAdmins");
+      }
+    } else {
+      throw AppError.forbidden("Admin access required");
+    }
+
+    user.status = UserStatus.DELETED;
+    await user.save();
+
+    res.json({ message: "User deleted successfully" });
+  }
+);
+
+/**
  * Get user submission count with time filter
  */
 export const getUserSubmissionCount = asyncHandler(
@@ -319,18 +374,7 @@ export const getUserSubmissionCount = asyncHandler(
     const timeFilter = (req.query.timeFilter as string) || "all"; // today, month, all
 
     const userId = new mongoose.Types.ObjectId(id);
-    let dateFilter: any = {};
-
-    if (timeFilter === "today") {
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
-      dateFilter = { submittedAt: { $gte: startOfDay } };
-    } else if (timeFilter === "month") {
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
-      dateFilter = { submittedAt: { $gte: startOfMonth } };
-    }
+    const dateFilter = buildDateFilter(timeFilter, "submittedAt");
 
     const count = await FormResponse.countDocuments({
       userId,
@@ -350,18 +394,26 @@ export const getUserAnalytics = asyncHandler(
     const userId = req.user!.userId;
 
     if (req.user?.role === UserRole.USER && id !== userId) {
-      throw AppError.forbidden("You are not authorized to access this user's analytics");
+      throw AppError.forbidden(
+        "You are not authorized to access this user's analytics"
+      );
     }
 
     const timeFilter = (req.query.timeFilter as string) || "all"; // today, month, all
 
-    let dateFilter = buildDateFilter(timeFilter);
-    // Map createdAt filter to submittedAt for FormResponse
-    const submittedAtFilter = dateFilter.createdAt
-      ? { submittedAt: dateFilter.createdAt }
-      : {};
+    const submittedAtFilter = buildDateFilter(timeFilter, "submittedAt");
 
     const userObjectId = new mongoose.Types.ObjectId(id);
+
+    const userRecord = await User.findOne({
+      _id: userObjectId,
+      status: UserStatus.ACTIVE,
+    })
+      .select("_id")
+      .lean();
+    if (!userRecord) {
+      throw AppError.notFound("User not found");
+    }
 
     // Get response count for time period
     const responseCount = await FormResponse.countDocuments({
@@ -398,10 +450,22 @@ export const getUserSubmissionsBreakdown = asyncHandler(
 
     // Authorization check: users can only see their own data, admins can see any user
     if (req.user?.role === UserRole.USER && id !== userId) {
-      throw AppError.forbidden("You are not authorized to access this user's data");
+      throw AppError.forbidden(
+        "You are not authorized to access this user's data"
+      );
     }
 
     const userObjectId = new mongoose.Types.ObjectId(id);
+
+    const userRecord = await User.findOne({
+      _id: userObjectId,
+      status: UserStatus.ACTIVE,
+    })
+      .select("_id")
+      .lean();
+    if (!userRecord) {
+      throw AppError.notFound("User not found");
+    }
 
     // Aggregate submissions grouped by formId with form details
     const submissionsBreakdown = await FormResponse.aggregate([
@@ -462,6 +526,7 @@ export const getAdminAnalytics = asyncHandler(
     // Count currently active users (within heartbeat window)
     const activeUsersCount = await User.countDocuments({
       lastHeartbeat: { $gte: heartbeatThreshold },
+      status: UserStatus.ACTIVE,
     });
 
     // Count draft forms
@@ -494,11 +559,12 @@ async function calculatePeakActivityHours(
     {
       $match: {
         lastHeartbeat: { $exists: true, $ne: null },
+        status: UserStatus.ACTIVE,
       },
     },
     {
       $project: {
-        hour: { $hour: { date: "$lastHeartbeat", timezone: "UTC" } },
+        hour: { $hour: { date: "$lastHeartbeat", timezone: "Asia/Kolkata" } },
       },
     },
     {

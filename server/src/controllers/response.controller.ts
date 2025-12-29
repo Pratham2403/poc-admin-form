@@ -7,6 +7,7 @@ import { AuthRequest } from "../middlewares/auth.middleware.ts";
 import { FormStatus, QuestionType } from "@poc-admin-form/shared";
 import { asyncHandler } from "../utils/asyncHandler.ts";
 import { AppError } from "../errors/AppError.ts";
+import { buildDateFilter } from "../utils/helper.utils.ts";
 
 /**
  * Submit a response to a form
@@ -50,7 +51,7 @@ export const submitResponse = asyncHandler(
       email: "Anonymous",
     };
     if (userId) {
-      const user = await User.findById(userId);
+      const user = await User.findById(userId).select("name email").lean();
       if (user) {
         userMetadata = {
           id: String(user._id),
@@ -131,7 +132,7 @@ export const updateResponse = asyncHandler(
       email: "Anonymous",
     };
     if (userId) {
-      const user = await User.findById(userId);
+      const user = await User.findById(userId).select("name email").lean();
       if (user) {
         userMetadata = {
           id: String(user._id),
@@ -322,18 +323,7 @@ export const getMySubmissionCount = asyncHandler(
     const userId = new mongoose.Types.ObjectId(req.user!.userId);
     const timeFilter = (req.query.timeFilter as string) || "all"; // today, month, all
 
-    let dateFilter: any = {};
-
-    if (timeFilter === "today") {
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
-      dateFilter = { submittedAt: { $gte: startOfDay } };
-    } else if (timeFilter === "month") {
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
-      dateFilter = { submittedAt: { $gte: startOfMonth } };
-    }
+    const dateFilter = buildDateFilter(timeFilter, "submittedAt");
 
     const count = await FormResponse.countDocuments({
       userId: userId,

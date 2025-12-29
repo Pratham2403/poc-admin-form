@@ -59,54 +59,47 @@ export const getForms = asyncHandler(
       ];
     }
 
-    // Aggregation pipeline to get forms with user's response status
+    // Aggregation pipeline to get forms with pagination + total count.
+    // Important: paginate BEFORE $lookup so the lookup runs only for the current page.
     const pipeline: any[] = [
-      // Match forms based on access and search
       { $match: baseMatch },
-
-      // Lookup user's responses for each form
-      {
-        $lookup: {
-          from: "formresponses",
-          let: { formId: "$_id" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [
-                    { $eq: ["$formId", "$$formId"] },
-                    { $eq: ["$userId", userId] },
-                  ],
-                },
-              },
-            },
-            { $limit: 1 }, // We only need to know if at least one exists
-          ],
-          as: "userResponses",
-        },
-      },
-
-      // Add 'responded' field based on whether user has any responses
-      {
-        $addFields: {
-          responded: { $gt: [{ $size: "$userResponses" }, 0] },
-        },
-      },
-
-      // Remove the userResponses array (we don't need to send it to frontend)
-      {
-        $project: {
-          userResponses: 0,
-        },
-      },
-
-      // Sort by creation date
-      { $sort: { createdAt: -1 } },
-
-      // Facet for pagination and total count
       {
         $facet: {
-          data: [{ $skip: skip }, { $limit: limit }],
+          data: [
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: limit },
+            {
+              $lookup: {
+                from: "formresponses",
+                let: { formId: "$_id" },
+                pipeline: [
+                  {
+                    $match: {
+                      $expr: {
+                        $and: [
+                          { $eq: ["$formId", "$$formId"] },
+                          { $eq: ["$userId", userId] },
+                        ],
+                      },
+                    },
+                  },
+                  { $limit: 1 },
+                ],
+                as: "userResponses",
+              },
+            },
+            {
+              $addFields: {
+                responded: { $gt: [{ $size: "$userResponses" }, 0] },
+              },
+            },
+            {
+              $project: {
+                userResponses: 0,
+              },
+            },
+          ],
           totalCount: [{ $count: "count" }],
         },
       },

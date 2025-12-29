@@ -4,7 +4,7 @@ import { Input } from "../../ui/Input";
 import { Switch } from "../../ui/Switch";
 import { Label } from "../../ui/Label";
 import { Card, CardContent } from "../../ui/Card";
-import { useState, useRef, useEffect } from "react";
+import { useMemo } from "react";
 
 interface QuestionItemProps {
   q: IQuestion;
@@ -25,6 +25,10 @@ interface QuestionItemProps {
   ) => void;
   removeOption: (questionId: string, optionIndex: number) => void;
   hasOptions: (type: QuestionType) => boolean;
+  isTypeDropdownOpen: boolean;
+  onToggleTypeDropdown: () => void;
+  onCloseTypeDropdown: () => void;
+  setTypeDropdownRef: (el: HTMLDivElement | null) => void;
 }
 
 export const QuestionItem = ({
@@ -38,26 +42,15 @@ export const QuestionItem = ({
   updateOption,
   removeOption,
   hasOptions,
+  isTypeDropdownOpen,
+  onToggleTypeDropdown,
+  onCloseTypeDropdown,
+  setTypeDropdownRef,
 }: QuestionItemProps) => {
-  const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsTypeDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  const selectedType = questionTypes.find((t) => t.value === q.type);
+  const selectedType = useMemo(
+    () => questionTypes.find((t) => t.value === q.type),
+    [q.type, questionTypes]
+  );
 
   return (
     <Card className="relative overflow-visible">
@@ -93,10 +86,10 @@ export const QuestionItem = ({
           <div className="space-y-2 lg:col-span-1">
             <Label>Question Type</Label>
 
-            <div className="relative" ref={dropdownRef}>
+            <div className="relative" ref={setTypeDropdownRef}>
               <button
                 type="button"
-                onClick={() => setIsTypeDropdownOpen(!isTypeDropdownOpen)}
+                onClick={onToggleTypeDropdown}
                 className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <span>{selectedType?.label || "Select Type"}</span>
@@ -119,7 +112,7 @@ export const QuestionItem = ({
                             type: type.value,
                             options: [],
                           });
-                          setIsTypeDropdownOpen(false);
+                          onCloseTypeDropdown();
                         }}
                       >
                         <span className="flex-grow">{type.label}</span>

@@ -21,6 +21,11 @@ import { usePortalPath } from "../../hooks/usePortalPath";
 import { SearchFilterBar } from "../../components/ui/SearchFilterBar";
 import { Pagination } from "../../components/ui/Pagination";
 import { type IForm } from "@poc-admin-form/shared";
+import {
+  formatDateIST,
+  formatDateTimeIST,
+  formatTimeIST,
+} from "../../utils/helper.utils";
 
 // Form group from getMyResponses (without responses array)
 interface FormGroup {
@@ -231,8 +236,7 @@ export const MyResponses = () => {
                         {group.form.title}
                       </h2>
                       <p className="text-sm text-muted-foreground hidden sm:block">
-                        Last active:{" "}
-                        {new Date(group.latestActivity).toLocaleString()}
+                        Last active: {formatDateTimeIST(group.latestActivity)}
                       </p>
                     </div>
                   </div>
@@ -279,15 +283,12 @@ export const MyResponses = () => {
                           </div>
                           <CardTitle className="text-base font-medium flex items-center gap-2">
                             <Clock className="h-4 w-4 text-muted-foreground" />
-                            {new Date(response.createdAt).toLocaleDateString()}
+                            {formatDateIST(response.createdAt)}
                             <span className="text-muted-foreground font-normal text-sm">
-                              {new Date(response.createdAt).toLocaleTimeString(
-                                [],
-                                {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                }
-                              )}
+                              {formatTimeIST(response.createdAt, {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
                             </span>
                           </CardTitle>
                         </CardHeader>

@@ -4,6 +4,7 @@ import {
   getUserById,
   createUser,
   updateUser,
+  deleteUser,
   updateUserProfile,
   getUserSubmissionCount,
   getUserAnalytics,
@@ -47,7 +48,12 @@ router.get("/analytics/:id", authenticate, heartbeat, getUserAnalytics);
  * Get user submissions breakdown per form
  * Accessible by the user themselves or admins
  */
-router.get("/submissions/:id", authenticate, heartbeat, getUserSubmissionsBreakdown);
+router.get(
+  "/submissions/:id",
+  authenticate,
+  heartbeat,
+  getUserSubmissionsBreakdown
+);
 
 /*
  * Get all users with pagination and search
@@ -94,6 +100,19 @@ router.put(
 );
 
 /*
+ * Soft delete user by ID
+ * Accessible SUPERADMIN and ADMIN with 'users' module permission
+ */
+router.delete(
+  "/:id",
+  authenticate,
+  heartbeat,
+  authorize([UserRole.ADMIN, UserRole.SUPERADMIN]),
+  authorizeModule("users"),
+  deleteUser
+);
+
+/*
  * Get user activity (submission count)
  * Accessible SUPERADMIN and ADMIN with 'users' module permission
  */
@@ -105,6 +124,5 @@ router.get(
   authorizeModule("users"),
   getUserSubmissionCount
 );
-
 
 export default router;

@@ -40,6 +40,10 @@ const FormResponseSchema: Schema = new Schema(
   { timestamps: true }
 );
 
+FormResponseSchema.index({ formId: 1, userId: 1, createdAt: -1 });
+FormResponseSchema.index({ userId: 1, formId: 1 });
+FormResponseSchema.index({ userId: 1, submittedAt: -1 });
+
 export default mongoose.model<IFormResponseDocument>(
   "FormResponse",
   FormResponseSchema

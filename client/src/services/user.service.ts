@@ -34,7 +34,6 @@ export interface UpdateProfileData {
   city?: string;
 }
 
-
 export interface UserAnalytics {
   responseCount: number;
   formsRespondedTo: number;
@@ -60,8 +59,6 @@ export interface SubmissionsBreakdown {
   total: number;
 }
 
-
-
 export const getUsers = async (page = 1, limit = 10, search = "") => {
   const response = await api.get("/users", {
     params: { page, limit, search },
@@ -81,6 +78,11 @@ export const createUser = async (data: CreateUserData) => {
 
 export const updateUser = async (id: string, data: UpdateUserData) => {
   const response = await api.put(`/users/${id}`, data);
+  return response.data;
+};
+
+export const deleteUser = async (id: string) => {
+  const response = await api.delete(`/users/${id}`);
   return response.data;
 };
 
@@ -105,11 +107,10 @@ export const getUserAnalytics = async (
   timeFilter?: "today" | "month" | "all"
 ): Promise<UserAnalytics> => {
   const response = await api.get(`/users/analytics/${id}`, {
-    params: { timeFilter: timeFilter || "all" }
+    params: { timeFilter: timeFilter || "all" },
   });
   return response.data;
 };
-
 
 export const getAdminAnalytics = async (): Promise<AdminAnalytics> => {
   const response = await api.get("/users/analytics/admin");

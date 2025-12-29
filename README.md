@@ -402,6 +402,10 @@ Security controls implemented:
 - ✅ **Rate Limiting**: Express-rate-limit (20 auth attempts/15min, 100 API requests/15min in production)
 - ✅ **CORS**: Whitelist-based origin validation
 
+**Search tradeoff**
+
+Some list endpoints support `search` using MongoDB `$regex` (case-insensitive) for flexible matching (including regex patterns). This is intentionally kept for functionality, but it can increase CPU usage at scale and often prevents efficient index usage. If you need more robust and scalable search later, consider MongoDB text indexes or Atlas Search.
+
 ---
 
 ## Observability & Logging
