@@ -58,7 +58,7 @@ export const FillForm = () => {
         navigate(getPath("/forms"));
       }
     } catch (error) {
-      addToast(error.response?.data?.message || "Failed to submit response", "error");
+      addToast("Failed to submit response", "error");
     } finally {
       setSubmitting(false);
     }
@@ -67,15 +67,17 @@ export const FillForm = () => {
   if (loading) return <PageLoader />;
   if (!form) {
     return (
-        <Card className="max-w-md mx-auto mt-16">
-            <CardContent className="text-center py-8">
-                <div className="text-4xl mb-4">😕</div>
-                <h2 className="text-xl font-semibold mb-2">Form Not Found</h2>
-                <p className="text-muted-foreground">This form doesn't exist or is no longer available.</p>
-            </CardContent>
-        </Card>
+      <Card className="max-w-md mx-auto mt-16">
+        <CardContent className="text-center py-8">
+          <div className="text-4xl mb-4">😕</div>
+          <h2 className="text-xl font-semibold mb-2">Form Not Found</h2>
+          <p className="text-muted-foreground">
+            This form doesn't exist or is no longer available.
+          </p>
+        </CardContent>
+      </Card>
     );
-}
+  }
 
   return (
     <div className="bg-muted/30 min-h-screen py-8 -mt-4 -mx-4 px-4">
