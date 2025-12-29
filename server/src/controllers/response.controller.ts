@@ -28,7 +28,7 @@ export const submitResponse = asyncHandler(
       status: FormStatus.PUBLISHED,
     });
     if (!form) {
-      throw AppError.notFound("Form not found");
+      throw AppError.notFound("Form not found or not published");
     }
 
     // Validate Short Answer Lengths
