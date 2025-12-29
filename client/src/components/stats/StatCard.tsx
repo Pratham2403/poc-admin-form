@@ -62,11 +62,6 @@ export const StatCard: React.FC<StatCardProps> = ({
                 <p className="text-2xl font-bold mt-1">{value}</p>
               </div>
             </div>
-            {hoverContent && (
-              <div className="text-xs text-muted-foreground/60">
-                <span className="hidden sm:inline">Hover for details</span>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>

@@ -229,7 +229,7 @@ export const FormsList = () => {
               </CardContent>
               <CardFooter className="pt-4 border-t border-border/40 bg-muted/5">
                 <Link
-                  to={getFormTargetPath(String(form._id))}
+                  to={getPath(`/forms/${form._id}`)}
                   className="w-full"
                 >
                   <Button
