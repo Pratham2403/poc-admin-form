@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useDebouncedEffect } from "../../hooks/useDebounce";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { getForms } from "../../services/form.service";
 import { type IForm, ViewType } from "@poc-admin-form/shared";
 import { useToast } from "../../components/ui/Toast";
@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 
 export const FormsList = () => {
+  const navigate = useNavigate();
   const [forms, setForms] = useState<IForm[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -180,32 +181,34 @@ export const FormsList = () => {
               key={form._id}
               className="hover:shadow-xl transition-all duration-300 border border-border/60 hover:border-primary/50 flex flex-col group bg-card hover:bg-card/80"
             >
-              <CardHeader className="space-y-3 pb-1">
-                <div className="flex justify-between items-start gap-4">
-                  <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
-                    <FileText className="h-5 w-5 text-primary" />
+              <Link to={getPath(`/forms/${form._id}`)} className="block">
+                <CardHeader className="space-y-3 pb-1 cursor-pointer">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+                      <FileText className="h-5 w-5 text-primary" />
+                    </div>
+                    {form.responded ? (
+                      <span className="flex items-center gap-1.5 text-xs font-semibold bg-blue-100 text-blue-700 px-3 py-1 rounded-full dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800 shadow-sm">
+                        <CheckCircle className="h-3.5 w-3.5" />
+                        Responded
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-xs font-semibold bg-gray-100 text-gray-700 px-3 py-1 rounded-full dark:bg-gray-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700 shadow-sm">
+                        <Clock className="h-3.5 w-3.5" />
+                        Available
+                      </span>
+                    )}
                   </div>
-                  {form.responded ? (
-                    <span className="flex items-center gap-1.5 text-xs font-semibold bg-blue-100 text-blue-700 px-3 py-1 rounded-full dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800 shadow-sm">
-                      <CheckCircle className="h-3.5 w-3.5" />
-                      Responded
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1.5 text-xs font-semibold bg-gray-100 text-gray-700 px-3 py-1 rounded-full dark:bg-gray-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700 shadow-sm">
-                      <Clock className="h-3.5 w-3.5" />
-                      Available
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <CardTitle className="text-xl line-clamp-1 group-hover:text-primary transition-colors mb-1.5 leading-tight">
-                    {form.title}
-                  </CardTitle>
-                  <CardDescription className="line-clamp-2 leading-relaxed">
-                    {form.description || "No description provided"}
-                  </CardDescription>
-                </div>
-              </CardHeader>
+                  <div>
+                    <CardTitle className="text-xl line-clamp-1 group-hover:text-primary transition-colors mb-1.5 leading-tight">
+                      {form.title}
+                    </CardTitle>
+                    <CardDescription className="line-clamp-2 leading-relaxed">
+                      {form.description || "No description provided"}
+                    </CardDescription>
+                  </div>
+                </CardHeader>
+              </Link>
               <CardContent className="flex-1 pt-0">
                 <div className="flex items-center gap-4 text-sm text-muted-foreground bg-muted/40 p-3 rounded-lg border border-border/40 mt-2">
                   <div className="flex items-center gap-2">
@@ -222,7 +225,9 @@ export const FormsList = () => {
                     className="w-full shadow-md hover:shadow-lg transition-all gap-2"
                     variant={form.responded ? "outline" : "default"}
                   >
-                    {form.responded ? "Submit Another Response" : "Start Form"}
+                    {form.responded
+                      ? "Submit Another Response"
+                      : "Submit Response"}
                   </Button>
                 </Link>
               </CardFooter>
@@ -253,7 +258,8 @@ export const FormsList = () => {
                 {filteredForms.map((form) => (
                   <tr
                     key={form._id}
-                    className="group hover:bg-muted/30 transition-colors"
+                    onClick={() => navigate(getPath(`/forms/${form._id}`))}
+                    className="group hover:bg-muted/30 transition-colors cursor-pointer"
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -264,7 +270,7 @@ export const FormsList = () => {
                           <div className="font-medium text-foreground group-hover:text-primary transition-colors">
                             {form.title}
                           </div>
-                          <div className="text-xs text-muted-foreground line-clamp-1 max-w-[200px]">
+                          <div className="text-xs text-muted-foreground line-clamp-1 max-w-50">
                             {form.description}
                           </div>
                         </div>
@@ -292,7 +298,10 @@ export const FormsList = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Link to={getPath(`/forms/${form._id}`)}>
+                      <Link
+                        to={getPath(`/forms/${form._id}`)}
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <Button
                           size="sm"
                           className="h-8 shadow-md"

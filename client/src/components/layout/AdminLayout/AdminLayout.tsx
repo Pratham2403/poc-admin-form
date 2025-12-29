@@ -18,19 +18,21 @@ export const AdminLayout = () => {
       await logout();
       addToast("Logged out successfully", "success");
       navigate("/admin/login");
-    } catch (error) {
+    } catch {
       addToast("Failed to logout", "error");
     }
   };
 
   const isActive = (path: string) => {
-    if (path === "/admin/users/create") {
-      return location.pathname === path;
+    if (path === "/admin/dashboard") {
+      return (
+        location.pathname.startsWith("/admin/dashboard") ||
+        location.pathname.startsWith("/admin/create") ||
+        location.pathname.startsWith("/admin/edit/")
+      );
     }
-    return (
-      location.pathname.startsWith(path) &&
-      location.pathname !== "/admin/users/create"
-    );
+
+    return location.pathname.startsWith(path);
   };
 
   const NavLink = ({
@@ -78,18 +80,10 @@ export const AdminLayout = () => {
             Management
           </div>
           <NavLink to="/admin/forms">Forms</NavLink>
-          {(user?.role === UserRole.SUPERADMIN ||
-            user?.modulePermissions?.forms) && (
-            <NavLink to="/admin/create">Create Form</NavLink>
-          )}
           <NavLink to="/admin/my-responses">My Responses</NavLink>
           {(user?.role === UserRole.SUPERADMIN ||
             user?.modulePermissions?.users) && (
             <NavLink to="/admin/users">User Management</NavLink>
-          )}
-          {(user?.role === UserRole.SUPERADMIN ||
-            user?.modulePermissions?.users) && (
-            <NavLink to="/admin/users/create">Create User</NavLink>
           )}
           <NavLink to="/admin/system-settings">System Settings</NavLink>
           <NavLink to="/admin/profile">My Profile</NavLink>

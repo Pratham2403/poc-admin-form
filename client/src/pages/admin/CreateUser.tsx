@@ -4,6 +4,8 @@ import { UserRole, UserMode } from "@poc-admin-form/shared";
 import { createUser } from "../../services/user.service";
 import { UserPlus } from "lucide-react";
 import { UserForm } from "../../components/forms/UserForm/UserForm";
+import { usePortalPath } from "@/hooks/usePortalPath";
+import { useNavigate } from "react-router";
 
 interface CreateUserData {
   name: string;
@@ -16,6 +18,8 @@ interface CreateUserData {
 }
 
 export const CreateUser = () => {
+  const navigate = useNavigate();
+  const { getPath } = usePortalPath();
   const [loading, setLoading] = useState(false);
   const { addToast } = useToast();
 
@@ -33,6 +37,7 @@ export const CreateUser = () => {
       throw err; // Re-throw to prevent form reset on error
     } finally {
       setLoading(false);
+      navigate(getPath("/my-responses"));
     }
   };
 

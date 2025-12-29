@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useDebouncedEffect } from "../../hooks/useDebounce";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   getForms,
   deleteForm,
@@ -49,9 +49,11 @@ import {
   Users,
   FileClock,
   TrendingUp,
+  LayoutDashboard,
 } from "lucide-react";
 
 export const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [forms, setForms] = useState<IForm[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -230,19 +232,18 @@ export const AdminDashboard = () => {
 
   return (
     <div className="flex flex-col min-h-full space-y-8 animate-in fade-in duration-500">
-      {/* Header */}
+      {/* Analytics Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent flex items-center gap-3">
-            <ClipboardList className="h-8 w-8 text-primary" />
-            My Forms
+            <LayoutDashboard className="h-8 w-8 text-primary" />
+            Analytics
           </h1>
           <p className="text-muted-foreground mt-2 text-lg">
-            Create and manage your data collection forms
+            Unified overview of forms and user activity
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <ViewToggle viewType={viewType} onToggle={toggleView} />
           {hasFormsPermission && (
             <Button
               variant="outline"
@@ -253,17 +254,6 @@ export const AdminDashboard = () => {
               <UserCog className="h-5 w-5 text-primary" />
               <span className="hidden sm:inline">Copy Service Email</span>
             </Button>
-          )}
-          {hasFormsPermission && (
-            <Link to="/admin/create">
-              <Button
-                size="lg"
-                className="shadow-lg hover:shadow-xl transition-all gap-2"
-              >
-                <Plus className="h-5 w-5" />
-                Create New Form
-              </Button>
-            </Link>
           )}
         </div>
       </div>
@@ -307,6 +297,33 @@ export const AdminDashboard = () => {
           loadStats(filter as ApiTimeFilter);
         }}
       />
+      {/* Form Headers */}
+      <div className="flex flex-col mt-6 md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent flex items-center gap-3">
+            <ClipboardList className="h-8 w-8 text-primary" />
+            My Forms
+          </h1>
+          <p className="text-muted-foreground mt-2 text-lg">
+            Create and manage your data collection forms
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <ViewToggle viewType={viewType} onToggle={toggleView} />
+
+          {hasFormsPermission && (
+            <Link to="/admin/create">
+              <Button
+                size="lg"
+                className="shadow-lg hover:shadow-xl transition-all gap-2"
+              >
+                <Plus className="h-5 w-5" />
+                Create New Form
+              </Button>
+            </Link>
+          )}
+        </div>
+      </div>
       {/* Search and Filter */}
       <div className="flex flex-col md:flex-row justify-between gap-4 p-1">
         <div className="flex-1">
@@ -379,37 +396,73 @@ export const AdminDashboard = () => {
               key={form._id}
               className="group hover:shadow-xl transition-all duration-300 border border-border/40 hover:border-primary/40 bg-card hover:bg-card/80"
             >
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 bg-primary/5 rounded-md mt-1 group-hover:bg-primary/10 transition-colors">
-                      <FileText className="h-4 w-4 text-primary/80" />
+              {hasFormsPermission ? (
+                <Link to={`/admin/edit/${form._id}`} className="block">
+                  <CardHeader className="pb-3 cursor-pointer">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 bg-primary/5 rounded-md mt-1 group-hover:bg-primary/10 transition-colors">
+                          <FileText className="h-4 w-4 text-primary/80" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg line-clamp-1 group-hover:text-primary transition-colors">
+                            {form.title}
+                          </CardTitle>
+                          <CardDescription className="line-clamp-2 min-h-10 mt-1">
+                            {form.description || "No description provided."}
+                          </CardDescription>
+                        </div>
+                      </div>
+                      <span
+                        className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border flex items-center gap-1 ${
+                          form.status === FormStatus.PUBLISHED
+                            ? "bg-green-500/10 text-green-600 border-green-200 dark:border-green-900"
+                            : "bg-yellow-500/10 text-yellow-600 border-yellow-200 dark:border-yellow-900"
+                        }`}
+                      >
+                        {form.status === FormStatus.PUBLISHED ? (
+                          <Globe className="h-3 w-3" />
+                        ) : (
+                          <Eye className="h-3 w-3" />
+                        )}
+                        {form.status.toUpperCase()}
+                      </span>
                     </div>
-                    <div>
-                      <CardTitle className="text-lg line-clamp-1 group-hover:text-primary transition-colors">
-                        {form.title}
-                      </CardTitle>
-                      <CardDescription className="line-clamp-2 min-h-[2.5rem] mt-1">
-                        {form.description || "No description provided."}
-                      </CardDescription>
+                  </CardHeader>
+                </Link>
+              ) : (
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-primary/5 rounded-md mt-1 group-hover:bg-primary/10 transition-colors">
+                        <FileText className="h-4 w-4 text-primary/80" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg line-clamp-1 group-hover:text-primary transition-colors">
+                          {form.title}
+                        </CardTitle>
+                        <CardDescription className="line-clamp-2 min-h-10 mt-1">
+                          {form.description || "No description provided."}
+                        </CardDescription>
+                      </div>
                     </div>
+                    <span
+                      className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border flex items-center gap-1 ${
+                        form.status === FormStatus.PUBLISHED
+                          ? "bg-green-500/10 text-green-600 border-green-200 dark:border-green-900"
+                          : "bg-yellow-500/10 text-yellow-600 border-yellow-200 dark:border-yellow-900"
+                      }`}
+                    >
+                      {form.status === FormStatus.PUBLISHED ? (
+                        <Globe className="h-3 w-3" />
+                      ) : (
+                        <Eye className="h-3 w-3" />
+                      )}
+                      {form.status.toUpperCase()}
+                    </span>
                   </div>
-                  <span
-                    className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border flex items-center gap-1 ${
-                      form.status === FormStatus.PUBLISHED
-                        ? "bg-green-500/10 text-green-600 border-green-200 dark:border-green-900"
-                        : "bg-yellow-500/10 text-yellow-600 border-yellow-200 dark:border-yellow-900"
-                    }`}
-                  >
-                    {form.status === FormStatus.PUBLISHED ? (
-                      <Globe className="h-3 w-3" />
-                    ) : (
-                      <Eye className="h-3 w-3" />
-                    )}
-                    {form.status.toUpperCase()}
-                  </span>
-                </div>
-              </CardHeader>
+                </CardHeader>
+              )}
               <CardContent className="pb-3">
                 <div className="grid grid-cols-2 gap-4 text-sm bg-muted/40 p-3 rounded-lg border border-border/30">
                   <div className="text-center">
@@ -530,7 +583,13 @@ export const AdminDashboard = () => {
                 {filteredForms.map((form) => (
                   <tr
                     key={form._id}
-                    className="group hover:bg-muted/30 transition-colors"
+                    onClick={() => {
+                      if (!hasFormsPermission) return;
+                      navigate(`/admin/edit/${form._id}`);
+                    }}
+                    className={`group hover:bg-muted/30 transition-colors ${
+                      hasFormsPermission ? "cursor-pointer" : ""
+                    }`}
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -541,7 +600,7 @@ export const AdminDashboard = () => {
                           <div className="font-medium text-foreground group-hover:text-primary transition-colors">
                             {form.title}
                           </div>
-                          <div className="text-xs text-muted-foreground line-clamp-1 max-w-[200px]">
+                          <div className="text-xs text-muted-foreground line-clamp-1 max-w-50">
                             {form.description}
                           </div>
                         </div>
@@ -592,7 +651,10 @@ export const AdminDashboard = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       {hasFormsPermission ? (
-                        <div className="flex items-center justify-end gap-1">
+                        <div
+                          className="flex items-center justify-end gap-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Link to={`/admin/edit/${form._id}`}>
                             <Button
                               variant="ghost"
