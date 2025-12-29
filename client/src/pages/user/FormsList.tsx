@@ -312,7 +312,7 @@ export const FormsList = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <Link
-                        to={getFormTargetPath(String(form._id))}
+                        to={getPath(`/forms/${form._id}`)}
                         onClick={(e) => e.stopPropagation()}
                       >
                         <Button
