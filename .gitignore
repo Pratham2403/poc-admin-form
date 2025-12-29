@@ -54,3 +54,7 @@ shared/node_modules
 shared/dist
 shared/build
 shared/.env*
+
+
+# Documentation
+docs/*
