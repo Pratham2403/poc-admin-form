@@ -26,6 +26,7 @@ import {
   Eye,
   EyeOff,
   AlertTriangle,
+  Building,
 } from "lucide-react";
 
 interface UserFormData {
@@ -33,6 +34,7 @@ interface UserFormData {
   email: string;
   role?: UserRole;
   employeeId?: string;
+  city?: string;
   vendorId?: string;
   modulePermissions?: { users: boolean; forms: boolean };
   password?: string;
@@ -65,6 +67,7 @@ export const UserForm = ({
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<UserRole>(UserRole.USER);
   const [employeeId, setEmployeeId] = useState("");
+  const [city, setCity] = useState("");
   const [vendorId, setVendorId] = useState("");
   const [password, setPassword] = useState("");
   const [changePassword, setChangePassword] = useState(false);
@@ -82,7 +85,7 @@ export const UserForm = ({
       setRole(initialData.role || UserRole.USER);
       setEmployeeId(initialData.employeeId || "");
       setVendorId(initialData.vendorId || "");
-
+      setCity(initialData.city || "");
       // Set module permissions
       if (initialData.modulePermissions) {
         const { users, forms } = initialData.modulePermissions;
@@ -168,6 +171,7 @@ export const UserForm = ({
       setRole(UserRole.USER);
       setEmployeeId("");
       setVendorId("");
+      setCity("");
       setPassword("");
       setUseDefaultPassword(true);
       setSelectedModule("forms");
@@ -178,6 +182,7 @@ export const UserForm = ({
       setRole(initialData.role || UserRole.USER);
       setEmployeeId(initialData.employeeId || "");
       setVendorId(initialData.vendorId || "");
+      setCity(initialData.city || "");
       setPassword("");
       setChangePassword(false);
 
@@ -348,7 +353,7 @@ export const UserForm = ({
 
           {/* EmployeeId and VendorId - visible to both SuperAdmin and Admin with users module */}
           {canEditEmployeeVendorId && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="employeeId" className="flex items-center gap-2">
                   <Hash className="h-4 w-4 text-muted-foreground" />
@@ -374,6 +379,20 @@ export const UserForm = ({
                   value={vendorId}
                   onChange={(e) => setVendorId(e.target.value)}
                   placeholder="e.g. VEND001"
+                  className="bg-background/50"
+                  disabled={externalLoading || readOnly}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="city" className="flex items-center gap-2">
+                  <Building className="h-4 w-4 text-muted-foreground" />
+                  City
+                </Label>
+                <Input
+                  id="city"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="e.g. Noida"
                   className="bg-background/50"
                   disabled={externalLoading || readOnly}
                 />

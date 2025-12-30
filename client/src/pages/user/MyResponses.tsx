@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useDebouncedEffect } from "../../hooks/useDebounce";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Eye, Pencil, FileText, Clock, CheckCircle } from "lucide-react";
 import {
   getMyRespondedForms,
@@ -40,6 +40,7 @@ interface ResponseItem {
 const RESPONSES_PER_PAGE = 12;
 
 export const MyResponses = () => {
+  const navigate = useNavigate();
   const [responses, setResponses] = useState<ResponseItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange>({});
@@ -186,78 +187,82 @@ export const MyResponses = () => {
       ) : viewType === ViewType.GRID ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {responses.map((response) => (
-            <Card
-              key={response._id}
-              className="group hover:shadow-lg transition-all duration-300 border border-border/50 hover:border-primary/30"
-            >
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start gap-3">
-                  <CardTitle
-                    className="text-lg font-semibold leading-tight line-clamp-2 group-hover:text-primary transition-colors"
-                    title={response.form?.title}
-                  >
-                    {response.form?.title || "Form"}
-                  </CardTitle>
+            <Link to={getPath(`/my-responses/${response._id}/view`)}>
+              <Card
+                key={response._id}
+                className="group hover:shadow-lg transition-all duration-300 border border-border/50 hover:border-primary/30"
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-start gap-3">
+                    <CardTitle
+                      className="text-lg font-semibold leading-tight line-clamp-2 group-hover:text-primary transition-colors"
+                      title={response.form?.title}
+                    >
+                      {response.form?.title || "Form"}
+                    </CardTitle>
 
-                  <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0 max-w-40 sm:max-w-none truncate">
-                    <Clock className="h-3.5 w-3.5" />
-                    {formatDateTimeIST(response.updatedAt)}
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent className="pb-3">
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="bg-muted/30 p-2 rounded flex flex-col items-center justify-center gap-1">
-                    <span className="text-xs text-muted-foreground">
-                      Answers
-                    </span>
-                    <span className="font-bold flex items-center gap-1">
-                      <CheckCircle className="h-3 w-3 text-green-500" />
-                      {Object.keys(response.answers).length}
+                    <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0 max-w-40 sm:max-w-none truncate">
+                      <Clock className="h-3.5 w-3.5" />
+                      {formatDateTimeIST(response.updatedAt)}
                     </span>
                   </div>
-                  <div className="bg-muted/30 p-2 rounded flex flex-col items-center justify-center gap-1">
-                    <span className="text-xs text-muted-foreground">
-                      Updated
-                    </span>
-                    <span className="font-semibold text-xs text-center">
-                      {response.updatedAt !== response.createdAt ? "Yes" : "No"}
-                    </span>
+                </CardHeader>
+                <CardContent className="pb-3">
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="bg-muted/30 p-2 rounded flex flex-col items-center justify-center gap-1">
+                      <span className="text-xs text-muted-foreground">
+                        Answers
+                      </span>
+                      <span className="font-bold flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3 text-green-500" />
+                        {Object.keys(response.answers).length}
+                      </span>
+                    </div>
+                    <div className="bg-muted/30 p-2 rounded flex flex-col items-center justify-center gap-1">
+                      <span className="text-xs text-muted-foreground">
+                        Updated
+                      </span>
+                      <span className="font-semibold text-xs text-center">
+                        {response.updatedAt !== response.createdAt
+                          ? "Yes"
+                          : "No"}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-              <CardFooter className="pt-3 border-t border-border/30 bg-muted/5 flex gap-2">
-                {response.form?.allowEditResponse ? (
-                  <Link
-                    to={getPath(`/my-responses/${response._id}/edit`)}
-                    className="flex-1"
-                  >
-                    <Button
-                      variant="default"
-                      size="sm"
-                      className="w-full gap-2 shadow-sm"
+                </CardContent>
+                <CardFooter className="pt-3 border-t border-border/30 bg-muted/5 flex gap-2">
+                  {response.form?.allowEditResponse ? (
+                    <Link
+                      to={getPath(`/my-responses/${response._id}/edit`)}
+                      className="flex-1"
                     >
-                      <Pencil className="h-3.5 w-3.5" />
-                      Edit
-                    </Button>
-                  </Link>
-                ) : (
-                  <Link
-                    to={getPath(`/my-responses/${response._id}/view`)}
-                    className="flex-1"
-                  >
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="w-full gap-2"
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="w-full gap-2 shadow-sm"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        Edit
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Link
+                      to={getPath(`/my-responses/${response._id}/view`)}
+                      className="flex-1"
                     >
-                      <Eye className="h-3.5 w-3.5" />
-                      View
-                    </Button>
-                  </Link>
-                )}
-              </CardFooter>
-            </Card>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="w-full gap-2"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        View
+                      </Button>
+                    </Link>
+                  )}
+                </CardFooter>
+              </Card>
+            </Link>
           ))}
         </div>
       ) : (
@@ -288,6 +293,7 @@ export const MyResponses = () => {
                   <tr
                     key={response._id}
                     className="group hover:bg-muted/30 transition-colors"
+                    onClick={() => navigate(getPath(`/my-responses/${response._id}/view`))}
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">

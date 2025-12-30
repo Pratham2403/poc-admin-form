@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { deleteUser, getUsers } from "../../services/user.service";
 import { getSettings } from "../../services/systemSettings.service";
 import { type IUser, UserRole } from "@poc-admin-form/shared";
@@ -66,6 +66,7 @@ const formatLastActive = (
 
 export const UserManagement = () => {
   const { user: currentUser } = useAuth();
+  const navigate = useNavigate();
   const [users, setUsers] = useState<IUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
@@ -254,7 +255,8 @@ export const UserManagement = () => {
                 {users.map((user) => (
                   <tr
                     key={user._id}
-                    className="hover:bg-muted/30 transition-colors"
+                    className="transition-colors cursor-pointer hover:bg-primary/10"
+                    onClick={() => navigate(`/admin/users/${user._id}`)}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
