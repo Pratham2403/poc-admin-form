@@ -29,7 +29,7 @@ A production-ready full-stack form management platform with role-based access co
 - **Purpose**: Enterprise-grade form builder and response management system
 - **Primary Users**: Administrators (form creators) and end-users (form respondents)
 - **Responsibilities**:
-  - Form creation with multiple question types
+  - Form creation with multiple question types (short answer, multiple choice, checkboxes, paragraphs, date, time and dropdown)
   - Response collection and management
   - Automatic Google Sheets synchronization via MongoDB Atlas Triggers
   - Role-based access control with module-level permissions
@@ -38,25 +38,18 @@ A production-ready full-stack form management platform with role-based access co
 
 ## Architecture
 
-### System Components
-
-```
-┌─────────────┐         ┌──────────────┐         ┌─────────────┐
-│   Client    │◄───────►│   Express    │◄───────►│  MongoDB    │
-│  (React)    │  HTTPS  │   Server     │         │   Atlas     │
-└─────────────┘         └──────────────┘         └─────────────┘
-                                                         │
-                                                         │
-                                                         ▼
-                        ┌──────────────┐         ┌─────────────┐
-                        │ Google Sheets│         │ Atlas       │
-                        │     API      │◄────────│ Triggers    │
-                        └──────────────┘         └─────────────┘
+```mermaid
+graph LR
+    A[Client<br/>React] -->|HTTPS| B[Express<br/>Server]
+    B -->|Query/Update| C[MongoDB<br/>Atlas]
+    C -->|Trigger Event| D[Atlas<br/>Triggers]
+    D -->|API Call| E[Google Sheets<br/>API]
+    B -.->|Sync Status| C
 ```
 
 ### Component Flow
 
-1. **Client Layer**: React SPA with Vite, Tailwind CSS v4
+1. **Client Layer**: React (with TypeScript) with Vite, Tailwind CSS v4
 2. **API Layer**: Express.js with TypeScript, JWT authentication
 3. **Data Layer**: MongoDB Atlas with Mongoose ODM
 4. **Integration Layer**: MongoDB Atlas Triggers for async Google Sheets sync
@@ -96,7 +89,7 @@ A production-ready full-stack form management platform with role-based access co
 ## Prerequisites
 
 - Node.js 18+ and npm
-- MongoDB Atlas account (M0 cluster minimum)
+- MongoDB Atlas account
 - Google Cloud Service Account with Sheets API enabled
 - Git
 
@@ -134,67 +127,49 @@ cd client && npm install
 cd server && npm run dev      # Start backend (port 5000)
 cd client && npm run dev       # Start frontend (port 3000)
 
-# Production build
-cd client && npm run build     # Build static assets (client/dist)
-cd server && npm run build     # Builds the client from the server workspace (used for Render)
+# Production build and start
+cd server && npm run build && npm start   # Builds the client from the server workspace (used for Render) and starts the server
 ```
 
 ---
 
 ## Configuration
 
-Create `server/.env`:
+1. Create `server/.env`:
 
-```env
-# Server
-PORT=5000
-NODE_ENV=development
+   ```env
+   # Server
+   PORT=5000
+   NODE_ENV=development
 
-# Database
-MONGODB_URI=mongodb+srv://<USER>:<PASSWORD>@<CLUSTER>.mongodb.net/<DB_NAME>?retryWrites=true&w=majority
+   # Database
+   MONGODB_URI=mongodb+srv://<USER>:<PASSWORD>@<CLUSTER>.mongodb.net/<DB_NAME>?retryWrites=true&w=majority
 
-# Authentication
-JWT_SECRET=<GENERATE_SECURE_RANDOM_STRING>
-JWT_REFRESH_SECRET=<GENERATE_SECURE_RANDOM_STRING>
+   # Authentication
+   JWT_SECRET=<GENERATE_SECURE_RANDOM_STRING>
+   JWT_REFRESH_SECRET=<GENERATE_SECURE_RANDOM_STRING>
 
-# CORS
-CLIENT_URL=http://localhost:3000
+   # CORS
+   CLIENT_URL=http://localhost:3000
 
-# Google Sheets Integration
-GOOGLE_SERVICE_ACCOUNT_JSON=`{<google-service-accounts.json - credentials as a JSON String >}`
-```
+   # Google Sheets Integration
+   GOOGLE_SERVICE_ACCOUNT_JSON=`{<google-service-accounts.json - credentials as a JSON String >}`
+   ```
+
+2. Create `client/.env`:
+
+   ```env
+    VITE_THEME_STORAGE_KEY="vite-ui-theme"
+    VITE_API_BASE_URL="http://localhost:5000/api"
+    VITE_USER_STORAGE_KEY="user"
+    VITE_SERVICE_ACCOUNT_EMAIL="webcse@promptwithai-400718.iam.gserviceaccount.com"
+    VITE_VIEW_PREFERENCE_KEY="view_preference"
+   ```
+
+   - _Note:_ In production, `VITE_API_BASE_URL` is not needed.
+   - The axios config defaults to "/api" which works when served from same domain.
 
 **⚠️ Do not commit `.env` files to version control.**
-
----
-
-## Running
-
-### Development Mode
-
-```bash
-# Terminal 1: Backend
-cd server
-npm run dev
-
-# Terminal 2: Frontend
-cd client
-npm run dev
-```
-
-- Backend: `http://localhost:5000`
-- Frontend: `http://localhost:3000`
-- API: `http://localhost:5000/api`
-
-### Production Mode
-
-```bash
-# Build the client (output: client/dist)
-cd client && npm run build && cd ..
-
-# Start server
-cd server && npm start
-```
 
 ---
 
@@ -202,7 +177,7 @@ cd server && npm start
 
 This repo is designed to be deployed as a **single Render Web Service** (Node.js) that serves the built client from `client/dist` when `NODE_ENV=production`. MongoDB runs on Atlas, and Google Sheets sync is handled via Atlas App Services Triggers.
 
-- Detailed guide: see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+- Detailed guide: see [DEPLOYMENT.pdf](DEPLOYMENT.pdf)
 
 ---
 
@@ -247,13 +222,13 @@ Form responses are automatically synchronized to Google Sheets via MongoDB Atlas
 
 2. **Atlas Secrets**:
 
-   - Secret Name: `GOOGLE_SERVICE_ACCOUNT_JSON_SECRET`
+   - Secret Name: `GOOGLE_SERVICE_ACCOUNT_JSON`
    - Value: Complete Google Service Account JSON
 
 3. **Atlas Values**:
 
    - Value Name: `googleCredentials`
-   - Type: Linked to `GOOGLE_SERVICE_ACCOUNT_JSON_SECRET`
+   - Type: Linked to `GOOGLE_SERVICE_ACCOUNT_JSON` secret
 
 4. **Google Service Account**:
 
@@ -265,6 +240,7 @@ Form responses are automatically synchronized to Google Sheets via MongoDB Atlas
 5. **Atlas Function Dependencies**:
    - None (uses built-in `context.http` for REST API calls)
    - No external npm packages required (uses internal crypto package)
+   - To be safe install `crypto` dependency in the App Services Dependencies tab.
 
 ### Benefits
 
@@ -279,7 +255,11 @@ Form responses are automatically synchronized to Google Sheets via MongoDB Atlas
 
 ### Authentication (`/api/auth`)
 
-- `POST /api/auth/register` - Register new user
+- `GET /api/auth/csrf-token` - Get CSRF token
+
+  - Response: `{ csrfToken }`
+
+- `POST /api/auth/register` - Register new user (SuperAdmin only)
 
   - Body: `{ email, password, name, role? }`
   - Response: `{ message, success }`
@@ -294,11 +274,7 @@ Form responses are automatically synchronized to Google Sheets via MongoDB Atlas
   - Response: `{ message }` (clears cookies)
 
 - `POST /api/auth/refresh` - Refresh access token
-
   - Response: `{ message, user }` (uses refresh_token cookie)
-
-- `GET /api/auth/csrf-token` - Get CSRF token
-  - Response: `{ csrfToken }`
 
 ### Forms (`/api/forms`)
 
@@ -306,6 +282,10 @@ Form responses are automatically synchronized to Google Sheets via MongoDB Atlas
 
   - Query: `?page=1&limit=9`
   - Response: `{ data: Form[], pagination: {...} }`
+
+- `GET /api/forms/stats` - Get statistics for all forms (Admin only)
+
+  - Response: `{ forms: [{ _id, title, responseCount }], totalResponses }`
 
 - `GET /api/forms/:id` - Get form by ID
 
@@ -320,14 +300,11 @@ Form responses are automatically synchronized to Google Sheets via MongoDB Atlas
 - `PUT /api/forms/:id` - Update form (Admin only)
 
   - Body: `{ title?, description?, questions?, ... }`
+  - Middleware: `validateSheetAccess` (validates Google Sheet if URL provided)
   - Response: `Form` object
 
 - `DELETE /api/forms/:id` - Soft delete form (Admin only)
-
   - Response: `{ message }`
-
-- `GET /api/forms/:id/stats` - Get form statistics (Admin only)
-  - Response: `{ responseCount, ... }`
 
 ### Responses (`/api/responses`)
 
@@ -346,28 +323,71 @@ Form responses are automatically synchronized to Google Sheets via MongoDB Atlas
   - Query: `?page=1&limit=10&search=...`
   - Response: `{ data: FormGroup[], pagination: {...} }`
 
-- `GET /api/responses/:id` - Get response by ID
+- `GET /api/responses/my/forms` - Get forms that current user has responded to
 
-  - Response: `FormResponse` with populated form
+  - Response: `Form[]`
 
-- `GET /api/responses/my/count` - Get submission count
+- `GET /api/responses/my/count` - Get current user's submission count
 
   - Response: `{ count }`
 
-- `GET /api/responses/form/:formId` - Get all responses for form (Admin only)
-  - Response: `FormResponse[]`
+- `GET /api/responses/:id` - Get response by ID
+  - Response: `FormResponse` with populated form
 
 ### Users (`/api/users`)
 
 - `GET /api/users` - Get all users (Admin only, paginated)
+
+  - Query: `?page=1&limit=10&search=...`
+  - Response: `{ data: User[], pagination: {...} }`
+
+- `GET /api/users/:id` - Get user by ID
+
+  - Response: `User` object
+
+- `GET /api/users/:id/activity` - Get user submission count (Admin only)
+
+  - Response: `{ count }`
+
+- `GET /api/users/analytics/admin` - Get admin analytics (Admin only)
+
+  - Response: `{ totalUsers, totalSubmissions, ... }`
+
+- `GET /api/users/analytics/:id` - Get user analytics
+
+  - Response: `{ submissionCount, formsRespondedTo, ... }`
+
+- `GET /api/users/submissions/:id` - Get user submissions breakdown per form
+
+  - Response: `[{ formId, formTitle, count }]`
+
 - `POST /api/users` - Create user (Admin only)
+
+  - Body: `{ email, password, name, role, ... }`
+  - Response: `User` object
+
 - `PUT /api/users/:id` - Update user (Admin only)
-- `DELETE /api/users/:id` - Delete user (Admin only)
+
+  - Body: `{ email?, name?, role?, ... }`
+  - Response: `User` object
+
+- `PUT /api/users/profile` - Update own profile
+
+  - Body: `{ name?, password?, ... }`
+  - Response: `User` object
+
+- `DELETE /api/users/:id` - Soft delete user (Admin only)
+  - Response: `{ message }`
 
 ### System Settings (`/api/system-settings`)
 
-- `GET /api/system-settings` - Get system settings
-- `PUT /api/system-settings` - Update system settings (SuperAdmin only)
+- `GET /api/system-settings` - Get system settings (Admin only)
+
+  - Response: `{ modules: {...}, ... }`
+
+- `PUT /api/system-settings` - Update system settings (Admin only)
+  - Body: `{ modules?: {...}, ... }`
+  - Response: `SystemSettings` object
 
 ---
 
@@ -464,8 +484,7 @@ cd client && npm run build
 cd server && npm run build  # builds the client from the server workspace
 
 # Type checking
-cd server && npx tsc --noEmit
-cd client && npx tsc --noEmit
+npx tsc --noEmit
 ```
 
 ### Key Files
