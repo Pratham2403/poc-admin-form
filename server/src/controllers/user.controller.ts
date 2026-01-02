@@ -7,7 +7,11 @@ import SystemSettings from "../models/SystemSettings.model";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { asyncHandler } from "../utils/asyncHandler";
 import { AppError } from "../errors/AppError";
-import { formatHour, buildDateRangeFilter } from "../utils/helper.utils";
+import {
+  formatHour,
+  buildDateRangeFilter,
+  buildSafeRegex,
+} from "../utils/helper.utils";
 import { UserRole, FormStatus, UserStatus } from "@poc-admin-form/shared";
 import bcrypt from "bcryptjs";
 
@@ -24,15 +28,16 @@ export const getUsers = asyncHandler(
     let query: any = { status: UserStatus.ACTIVE };
 
     if (search) {
+      const safePattern = buildSafeRegex(search);
       query = {
         $and: [
           { status: UserStatus.ACTIVE },
           {
             $or: [
-              { email: { $regex: search, $options: "i" } },
-              { name: { $regex: search, $options: "i" } },
-              { employeeId: { $regex: search, $options: "i" } },
-              { vendorId: { $regex: search, $options: "i" } },
+              { email: { $regex: safePattern } },
+              { name: { $regex: safePattern } },
+              { employeeId: { $regex: safePattern } },
+              { vendorId: { $regex: safePattern } },
             ],
           },
         ],

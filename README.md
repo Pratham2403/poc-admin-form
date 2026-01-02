@@ -43,14 +43,14 @@ A production-ready full-stack form management platform with role-based access co
 ```
 ┌─────────────┐         ┌──────────────┐         ┌─────────────┐
 │   Client    │◄───────►│   Express    │◄───────►│  MongoDB    │
-│  (React)    │  HTTPS │   Server     │         │   Atlas     │
+│  (React)    │  HTTPS  │   Server     │         │   Atlas     │
 └─────────────┘         └──────────────┘         └─────────────┘
-                              │                          │
-                              │                          │
-                              ▼                          ▼
+                                                         │
+                                                         │
+                                                         ▼
                         ┌──────────────┐         ┌─────────────┐
                         │ Google Sheets│         │ Atlas       │
-                        │     API      │         │  Triggers   │
+                        │     API      │◄────────│ Triggers    │
                         └──────────────┘         └─────────────┘
 ```
 
@@ -88,6 +88,7 @@ A production-ready full-stack form management platform with role-based access co
 
 - MongoDB Atlas (database)
 - MongoDB Atlas App Services (triggers)
+- Google Service Account (for Google Sheets API)
 - Render (deployment)
 
 ---
@@ -134,8 +135,8 @@ cd server && npm run dev      # Start backend (port 5000)
 cd client && npm run dev       # Start frontend (port 3000)
 
 # Production build
-cd server && npm run build     # Compile TypeScript
-cd client && npm run build     # Build static assets
+cd client && npm run build     # Build static assets (client/dist)
+cd server && npm run build     # Builds the client from the server workspace (used for Render)
 ```
 
 ---
@@ -160,12 +161,7 @@ JWT_REFRESH_SECRET=<GENERATE_SECURE_RANDOM_STRING>
 CLIENT_URL=http://localhost:3000
 
 # Google Sheets Integration
-GOOGLE_SERVICE_ACCOUNT_JSON=`{<google-service-accounts.json - credentials>}`
-
-# Admin Seed (optional)
-ADMIN_EMAIL=admin@example.com
-ADMIN_PASSWORD=<SECURE_PASSWORD>
-ADMIN_NAME=Administrator
+GOOGLE_SERVICE_ACCOUNT_JSON=`{<google-service-accounts.json - credentials as a JSON String >}`
 ```
 
 **⚠️ Do not commit `.env` files to version control.**
@@ -193,8 +189,7 @@ npm run dev
 ### Production Mode
 
 ```bash
-# Build both
-cd server && npm run build && cd ..
+# Build the client (output: client/dist)
 cd client && npm run build && cd ..
 
 # Start server
@@ -205,19 +200,9 @@ cd server && npm start
 
 ## Deployment
 
-Deployed on Render (frontend as static site and backend as web service). Database deployed as a MongoDB Atlas cluster.
+This repo is designed to be deployed as a **single Render Web Service** (Node.js) that serves the built client from `client/dist` when `NODE_ENV=production`. MongoDB runs on Atlas, and Google Sheets sync is handled via Atlas App Services Triggers.
 
-**Render Configuration:**
-
-- Backend: Web Service (Node.js)
-- Frontend: Static Site (Vite build output)
-- Environment variables configured in Render dashboard
-
-**MongoDB Atlas:**
-
-- Cluster: M0 or higher
-- Database: `form-suite`
-- App Services: Enabled for triggers
+- Detailed guide: see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
 
 ---
 
@@ -308,7 +293,7 @@ Form responses are automatically synchronized to Google Sheets via MongoDB Atlas
 
   - Response: `{ message }` (clears cookies)
 
-- `GET /api/auth/refresh` - Refresh access token
+- `POST /api/auth/refresh` - Refresh access token
 
   - Response: `{ message, user }` (uses refresh_token cookie)
 
@@ -475,8 +460,8 @@ cd server && npm run dev
 cd client && npm run dev
 
 # Build
-cd server && npm run build
 cd client && npm run build
+cd server && npm run build  # builds the client from the server workspace
 
 # Type checking
 cd server && npx tsc --noEmit
@@ -518,4 +503,4 @@ User accounts are created through the user management API (`POST /api/users`). S
 
 ---
 
-**Last Updated**: December 29, 2025
+**Last Updated**: January 2, 2026

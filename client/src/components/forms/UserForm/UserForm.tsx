@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useToast } from "../../ui/Toast";
 import { Button } from "../../ui/Button";
 import { Input } from "../../ui/Input";
@@ -63,42 +63,39 @@ export const UserForm = ({
   // Determine if user can edit employeeId/vendorId
   const canEditEmployeeVendorId = isSuperAdmin || (isAdmin && hasUsersModule);
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<UserRole>(UserRole.USER);
-  const [employeeId, setEmployeeId] = useState("");
-  const [city, setCity] = useState("");
-  const [vendorId, setVendorId] = useState("");
+  const [name, setName] = useState(() =>
+    mode === UserMode.EDIT ? initialData?.name ?? "" : ""
+  );
+  const [email, setEmail] = useState(() =>
+    mode === UserMode.EDIT ? initialData?.email ?? "" : ""
+  );
+  const [role, setRole] = useState<UserRole>(() =>
+    mode === UserMode.EDIT ? initialData?.role ?? UserRole.USER : UserRole.USER
+  );
+  const [employeeId, setEmployeeId] = useState(() =>
+    mode === UserMode.EDIT ? initialData?.employeeId ?? "" : ""
+  );
+  const [city, setCity] = useState(() =>
+    mode === UserMode.EDIT ? initialData?.city ?? "" : ""
+  );
+  const [vendorId, setVendorId] = useState(() =>
+    mode === UserMode.EDIT ? initialData?.vendorId ?? "" : ""
+  );
   const [password, setPassword] = useState("");
   const [changePassword, setChangePassword] = useState(false);
   const [useDefaultPassword, setUseDefaultPassword] = useState(true);
   const [showPassword, setShowPassword] = useState(true);
-  const [selectedModule, setSelectedModule] = useState<string>("forms");
+  const [selectedModule, setSelectedModule] = useState<string>(() => {
+    if (mode !== UserMode.EDIT) return "forms";
+    const perms = initialData?.modulePermissions;
+    if (!perms) return "forms";
+    if (perms.users && perms.forms) return "all";
+    if (perms.users) return "users";
+    if (perms.forms) return "forms";
+    return "forms";
+  });
 
   const { addToast } = useToast();
-
-  // Initialize form with data for edit mode
-  useEffect(() => {
-    if (mode === UserMode.EDIT && initialData) {
-      setName(initialData.name || "");
-      setEmail(initialData.email || "");
-      setRole(initialData.role || UserRole.USER);
-      setEmployeeId(initialData.employeeId || "");
-      setVendorId(initialData.vendorId || "");
-      setCity(initialData.city || "");
-      // Set module permissions
-      if (initialData.modulePermissions) {
-        const { users, forms } = initialData.modulePermissions;
-        if (users && forms) {
-          setSelectedModule("all");
-        } else if (users) {
-          setSelectedModule("users");
-        } else if (forms) {
-          setSelectedModule("forms");
-        }
-      }
-    }
-  }, [mode, initialData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -310,12 +307,6 @@ export const UserForm = ({
                       disabled={externalLoading || readOnly}
                       className="bg-background/50"
                     >
-                      <option
-                        value="all"
-                        title="Access to both users and forms management"
-                      >
-                        All
-                      </option>
                       <option
                         value="forms"
                         title="Access to form creation and management"

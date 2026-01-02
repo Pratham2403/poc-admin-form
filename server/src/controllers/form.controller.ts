@@ -5,7 +5,7 @@ import { AuthRequest } from "../middlewares/auth.middleware.ts";
 import { FormStatus } from "@poc-admin-form/shared";
 import { asyncHandler } from "../utils/asyncHandler.ts";
 import { AppError } from "../errors/AppError.ts";
-import { buildDateRangeFilter } from "../utils/helper.utils.ts";
+import { buildDateRangeFilter, buildSafeRegex } from "../utils/helper.utils.ts";
 /**
  * Create a new form
  */
@@ -49,11 +49,12 @@ export const getForms = asyncHandler(
 
     // Add search conditions if provided
     if (search) {
+      const safePattern = buildSafeRegex(search);
       baseMatch.$and = [
         {
           $or: [
-            { title: { $regex: search, $options: "i" } },
-            { description: { $regex: search, $options: "i" } },
+            { title: { $regex: safePattern } },
+            { description: { $regex: safePattern } },
           ],
         },
       ];
