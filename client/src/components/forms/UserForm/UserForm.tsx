@@ -127,6 +127,7 @@ export const UserForm = ({
       } else {
         if (employeeId) userData.employeeId = employeeId;
         if (vendorId) userData.vendorId = vendorId;
+        if (city) userData.city = city;
       }
     }
 
@@ -326,6 +327,12 @@ export const UserForm = ({
                         title="Access to user management features"
                       >
                         Users
+                      </option>
+                      <option
+                        value="all"
+                        title="Access to both users and forms management"
+                      >
+                        All
                       </option>
                     </Select>
                   </div>

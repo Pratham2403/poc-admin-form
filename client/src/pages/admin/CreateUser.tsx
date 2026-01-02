@@ -37,7 +37,7 @@ export const CreateUser = () => {
       throw err; // Re-throw to prevent form reset on error
     } finally {
       setLoading(false);
-      navigate(getPath("/my-responses"));
+      navigate(getPath("/admin/users"));
     }
   };
 

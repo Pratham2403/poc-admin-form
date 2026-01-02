@@ -221,20 +221,21 @@ export const updateUser = asyncHandler(
       }
     }
 
-    // RULE 4: EmployeeId and VendorId permissions
+    // RULE 4: EmployeeId, VendorId, City permissions
     // SuperAdmin can edit for everyone, Admin can edit for USER role only
-    if (employeeId !== undefined || vendorId !== undefined) {
+    // City can be edited by SuperAdmin for everyone (except SuperAdmin), Admin can edit for USER role only
+    if (employeeId !== undefined || vendorId !== undefined || city !== undefined) {
       if (currentUser?.role === UserRole.ADMIN) {
         // Admin can only edit employeeId/vendorId for USER role
         if (user.role !== UserRole.USER) {
           throw AppError.forbidden(
-            "Admin can only edit employeeId and vendorId for User role"
+            "Admin can only edit employeeId, vendorId and city for User role"
           );
         }
       } else if (currentUser?.role !== UserRole.SUPERADMIN) {
         // Regular users cannot edit these fields
         throw AppError.forbidden(
-          "Only admins can edit employeeId and vendorId"
+          "Only admins can edit employeeId, vendorId and city"
         );
       }
     }
